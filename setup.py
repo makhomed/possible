@@ -26,9 +26,10 @@ setup(
     url='https://github.com/makhomed/possible',
     license='GPLv3',
     platforms=['Linux'],
-    packages=find_packages(exclude=['contrib', 'docs', 'tests']),
+    packages=find_packages(exclude=['bin', 'contrib', 'docs', 'tests']),
     include_package_data=True,
     install_requires=['fabric>=2.4.0,<3.0', 'Jinja2>=2.7.2'],
+    scripts=['bin/pos'],
     classifiers=[ # https://pypi.org/classifiers/
         'Development Status :: 1 - Planning',
         'Environment :: Console',
