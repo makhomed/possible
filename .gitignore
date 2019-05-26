@@ -1,0 +1,18 @@
+
+__pycache__/
+*.py[cod]
+
+dist/
+*.egg-info/
+
+.tox/
+.cache/
+htmlcov/
+.coverage
+
+# sphinx documentation
+docs/_build/
+
+# vim editor swap files
+*.swp
+
