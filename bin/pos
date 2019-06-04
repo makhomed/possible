@@ -14,7 +14,8 @@ options:
 
 """
 
-from possible import PossibleError, PossibleInventoryError
+import possible
+from possible import PossibleError, PossibleConfigError, PossibleInventoryError
 from possible import Config, Inventory
 from possible import eprint
 from possible import __version__
@@ -22,7 +23,7 @@ from possible import __version__
 import argparse
 import sys
 
-def parse_args():
+def parse_all():
     config = Config()
     parser = argparse.ArgumentParser(prog='pos', description="possible is configuration management tool")
     default_verbosity = ', default: -'+'v'*config.verbosity if config.verbosity else ""
@@ -30,28 +31,40 @@ def parse_args():
     default_task = f" (default: {config.task})" if config.task else ""
     parser.add_argument('target', action="store", nargs='?', default=config.target, help=f"target host or group name{default_target}")
     parser.add_argument('task', action="store", nargs='?', default=config.task, help=f"task to execute on target{default_task}")
-    parser.add_argument('-l', '--list', dest='list', action="store_true", help="list all available tasks and exit")
+    parser.add_argument('-V', '--version', action='version', version=f'possible {__version__}', help="show program's version and exit")
+    parser.add_argument('-C', '--dump-config', dest='dump_config', action="store_true", help="show config dump and exit")
+    parser.add_argument('-I', '--dump-inventory', dest='dump_inventory', action="store_true", help="show inventory dump and exit")
+    parser.add_argument('-l', '--list', dest='list', action="store_true", help="show all available tasks and exit")
     parser.add_argument('-v', '--verbose', dest='verbosity', default=config.verbosity, action="count", help=f"verbose mode (-vv or -vvv for more{default_verbosity})")
-    parser.add_argument('-V', '--version', action='version', version=f'possible {__version__}')
+    parser.add_argument('-D', '--debug', dest='debug', action="store_true", help="debug mode")
     parser.add_argument('-c', '--config', dest='config', default=config.config, help="specify config file to use (default: %(default)s)")
     parser.add_argument('-i', '--inventory', dest='inventory', default=config.inventory, help="specify inventory dir to use (default:  %(default)s)")
     parser.add_argument('-p', '--posfile', dest='posfile', default=config.posfile, help="specify posfile to use (default: %(default)s)")
     parser.add_argument('-t', '--threads', dest='threads', default=config.threads, type=int, help="specify number of threads to use (default: %(default)s)")
     args = parser.parse_args()
+    if not args.debug:
+        possible.debug.disable()
     if args.task is None:
         args.task = args.target
         args.target = None
-    return args
-
+    config = Config(args.config, args=args)
+    inventory = Inventory(config.inventory)
+    if args.dump_config:
+        print(config.dump())
+        sys.exit(0)
+    if args.dump_inventory:
+        print(inventory.dump())
+        sys.exit(0)
+    return config, inventory
 
 def main():
     try:
         sys.dont_write_bytecode = True
-        args = parse_args()
-        config = Config(args.config, args=args)
-        inventory = Inventory(config.inventory)
-        print(config)
+        config, inventory = parse_all()
     except PossibleInventoryError as e:
+        eprint(e)
+        sys.exit(3)
+    except PossibleConfigError as e:
         eprint(e)
         sys.exit(2)
     except PossibleError as e:

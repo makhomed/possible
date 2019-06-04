@@ -1,10 +1,11 @@
 
 __all__ = ['Config']
 
+import warnings
 import yaml
 from pathlib import Path
 
-from .exceptions import PossibleConfigError
+from .exceptions import PossibleConfigError, PossibleConfigWarning
 
 class DefaultConfig:
     config = 'config.yaml'
@@ -33,7 +34,13 @@ class Config():
         if config.is_file():
             try:
                 with open(config) as config_file:
-                    self.__dict__['__config'].update(yaml.safe_load(config_file))
+                    content = yaml.safe_load(config_file)
+                    if content is None:
+                        warnings.warn(f"Config file {config} is empty", PossibleConfigWarning)
+                    elif isinstance(content, dict):
+                        self.__dict__['__config'].update(content)
+                    else:
+                        raise PossibleConfigError(f"Config file {config} content must be dictionary type, given:\n\n{content}\n")
             except yaml.YAMLError as e:
                 raise PossibleConfigError(f"Error parsing config: {e}")
         elif not default_config:
@@ -47,6 +54,9 @@ class Config():
             self.target = args.target
             self.task = args.task
         self.check_config()
+
+    def dump(self):
+        return yaml.dump(self.__dict__['__config'])
 
     def check_config(self):
         config = self.__dict__['__config_filename']
