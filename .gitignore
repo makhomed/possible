@@ -10,9 +10,18 @@ dist/
 htmlcov/
 .coverage
 
-# sphinx documentation
+# Sphinx documentation
 docs/_build/
 
-# vim editor swap files
+# For IntelliJ IDEs (basically PyCharm)
+.idea/
+
+# For Visual Studio Code
+.vscode/
+
+# Vim editor swap files
 *.swp
+
+# Mac
+.DS_Store
 
