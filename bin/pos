@@ -1,23 +1,8 @@
 #!/usr/bin/python3
 
-"""
-usage:
-
-pos [options] [target] <task>
-
-options:
-
--h --help print help
--V --version print version
--v -vv -vvv increase verbosity
--i --inventory INVENTORY use custom inventory
-
-"""
-
-import possible
 from possible import PossibleError, PossibleConfigError, PossibleInventoryError
 from possible import Config, Inventory
-from possible import eprint
+from possible import eprint, debug
 from possible import __version__
 
 import argparse
@@ -43,7 +28,7 @@ def parse_all():
     parser.add_argument('-t', '--threads', dest='threads', default=config.threads, type=int, help="specify number of threads to use (default: %(default)s)")
     args = parser.parse_args()
     if not args.debug:
-        possible.debug.disable()
+        debug.disable()
     if args.task is None:
         args.task = args.target
         args.target = None
