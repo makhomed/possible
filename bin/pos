@@ -1,11 +1,65 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+"""
+usage:
 
+pos [options] [target] <task>
+
+options:
+
+-h --help print help
+-V --version print version
+-v -vv -vvv increase verbosity
+-i --inventory INVENTORY use custom inventory
+
+"""
+
+from possible import PossibleError, PossibleInventoryError
+from possible import Config, Inventory
+from possible import eprint
+from possible import __version__
+
+import argparse
+import sys
+
+def parse_args():
+    config = Config()
+    parser = argparse.ArgumentParser(prog='pos', description="possible is configuration management tool")
+    default_verbosity = ', default: -'+'v'*config.verbosity if config.verbosity else ""
+    default_target = f" (default: {config.target})" if config.target else ""
+    default_task = f" (default: {config.task})" if config.task else ""
+    parser.add_argument('target', action="store", nargs='?', default=config.target, help=f"target host or group name{default_target}")
+    parser.add_argument('task', action="store", nargs='?', default=config.task, help=f"task to execute on target{default_task}")
+    parser.add_argument('-l', '--list', dest='list', action="store_true", help="list all available tasks and exit")
+    parser.add_argument('-v', '--verbose', dest='verbosity', default=config.verbosity, action="count", help=f"verbose mode (-vv or -vvv for more{default_verbosity})")
+    parser.add_argument('-V', '--version', action='version', version=f'possible {__version__}')
+    parser.add_argument('-c', '--config', dest='config', default=config.config, help="specify config file to use (default: %(default)s)")
+    parser.add_argument('-i', '--inventory', dest='inventory', default=config.inventory, help="specify inventory dir to use (default:  %(default)s)")
+    parser.add_argument('-p', '--posfile', dest='posfile', default=config.posfile, help="specify posfile to use (default: %(default)s)")
+    parser.add_argument('-t', '--threads', dest='threads', default=config.threads, type=int, help="specify number of threads to use (default: %(default)s)")
+    args = parser.parse_args()
+    if args.task is None:
+        args.task = args.target
+        args.target = None
+    return args
 
 
 def main():
-    print('pos')
+    try:
+        sys.dont_write_bytecode = True
+        args = parse_args()
+        config = Config(args.config, args=args)
+        inventory = Inventory(config.inventory)
+        print(config)
+    except PossibleInventoryError as e:
+        eprint(e)
+        sys.exit(2)
+    except PossibleError as e:
+        eprint(e)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        eprint("User interrupted execution")
+        sys.exit(99)
 
 
 if __name__=='__main__':
