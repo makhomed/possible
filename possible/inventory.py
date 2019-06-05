@@ -2,11 +2,10 @@
 __all__ = ['Inventory']
 
 import re
-import warnings
 import yaml
 from pathlib import Path
 
-from .exceptions import PossibleInventoryError, PossibleInventoryWarning
+from .exceptions import PossibleInventoryError
 
 
 class HostChecks:
@@ -408,3 +407,6 @@ class Inventory:
             vars.append(temp_dict)
         return yaml.dump(inventory)
 
+
+    def dump_vars(self):
+        raise NotImplementedError

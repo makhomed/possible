@@ -1,11 +1,10 @@
 
 __all__ = ['Config']
 
-import warnings
 import yaml
 from pathlib import Path
 
-from .exceptions import PossibleConfigError, PossibleConfigWarning
+from .exceptions import PossibleConfigError
 
 class DefaultConfig:
     config = 'config.yaml'
@@ -36,7 +35,7 @@ class Config():
                 with open(config) as config_file:
                     content = yaml.safe_load(config_file)
                     if content is None:
-                        warnings.warn(f"Config file {config} is empty", PossibleConfigWarning)
+                        raise PossibleConfigError(f"Config file {config} is empty")
                     elif isinstance(content, dict):
                         self.__dict__['__config'].update(content)
                     else:
