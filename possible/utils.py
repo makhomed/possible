@@ -1,17 +1,16 @@
 
-__all__ = ['eprint', 'Singleton']
+__all__ = ['debug', 'eprint', 'Singleton']
 
 import traceback
 from threading import RLock
 import sys
 
 def eprint(*args, **kwargs):
-    if args and isinstance(args[0], Exception):
+    if debug and args and isinstance(args[0], Exception):
         e = args[0]
         print(''.join(traceback.format_exception(type(e), e, e.__traceback__)), file=sys.stderr, flush=True)
     else:
         print(*args, file=sys.stderr, flush=True, **kwargs)
-
 
 class Singleton(type):
     """Metaclass for classes that wish to implement Singleton
@@ -33,6 +32,26 @@ class Singleton(type):
 
         return cls.__instance
 
+class Debug(metaclass=Singleton):
+        def __init__(self):
+            self.__debug = True
+
+        def __bool__(self):
+            return self.__debug
+
+        def enable(self):
+            self.__debug = True
+
+        def disable(self):
+            self.__debug = False
+
+        def __str__(self):
+            if self.__debug:
+                return "debug enabled"
+            else:
+                return "debug disabled"
+
+debug = Debug()
 
 class Display(metaclass=Singleton):
         pass
