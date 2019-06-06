@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+
 from possible import PossibleError, PossibleConfigError, PossibleInventoryError
 from possible import Config, Inventory
 from possible import eprint, debug
@@ -7,6 +8,7 @@ from possible import __version__
 
 import argparse
 import sys
+
 
 def parse_all():
     config = Config()

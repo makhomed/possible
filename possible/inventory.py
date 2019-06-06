@@ -67,6 +67,8 @@ class DefaultHost:
 class Host:
     def __init__(self, name, config):
         self.name = name
+        self.groups = set()
+        self.vars = dict()
         HostChecks.ensure_valid_host_name(self.name)
         if isinstance(config, dict):
             self.host = config.pop('host', DefaultHost.host)
@@ -84,12 +86,14 @@ class Host:
         else:
                 raise PossibleInventoryError(f"Bad host {name} configuration: {config}")
 
+    def _dict(self):
+        return { 'name': self.name, 'host': self.host, 'user': self.user, 'port': self.port, 'password': self.password, 'sudo_password': self.sudo_password }
+
     def __str__(self):
-        return self.__dict__.__str__()
+        return self._dict().__str__()
 
     def __repr__(self):
-        return self.__dict__.__repr__()
-
+        return self._dict().__repr__()
 
 class Hosts():
     def __init__(self):
@@ -123,10 +127,11 @@ class Group:
     def __init__(self, name):
         self.name = name
         self.members = set()
+        self.hosts = set()
 
     def add(self, name):
         if name in self.members:
-            raise PossibleInventoryError(f"Member {name} already added to group {self.name}")
+            raise PossibleInventoryError(f"Member '{name}' already added to group '{self.name}'")
         else:
             self.members.add(name)
 
@@ -233,6 +238,45 @@ class Vars:
         return self.__objects.__repr__()
 
 
+class VarsPriority:
+    def __init__(self):
+        self._dict = dict()
+        self._list = list()
+        self._next = 0
+
+    def _add(self, name):
+        if name in self._dict:
+            raise PossibleInventoryError(f"Bad vars file, unexpected duplicate entry '{name}'")
+        else:
+            self._dict[name] = self._next
+            self._list.append(name)
+            self._next = self._next + 1
+
+    def add(self, name):
+        if self._next == 0:
+            if name == 'all':
+                self._add(name)
+            else:
+                raise PossibleInventoryError(f"Bad vars file, first vars file entry must be for group 'all', not for '{name}'")
+        else:
+            self._add(name)
+
+    def __iter__(self):
+        return self._list.__iter__()
+
+    def __len__(self):
+        return self._list.__len__()
+
+    def __contains__(self, item):
+        return self._dict.__contains__(item)
+
+    def __str__(self):
+        return self._list.__str__()
+
+    def __repr__(self):
+        return self._list.__repr__()
+
+
 class Inventory:
     def __init__(self, path):
         self.all_group = Group('all')
@@ -242,6 +286,7 @@ class Inventory:
         self.groups.add(self.all_group)
         self.groups.add(self.ungrouped_group)
         self.vars = Vars()
+        self.vars_priority = VarsPriority()
 
         path = Path(path).resolve()
         if not path.exists() or not path.is_dir():
@@ -253,8 +298,10 @@ class Inventory:
         self.parse_groups()
         self.check_groups()
         self.create_ungrouped_group()
+        self.set_groups_hosts_sets()
         self.vars_filename = path / 'vars.yaml'
         self.parse_vars()
+        self.merge_vars()
 
     def parse_hosts(self):
         if self.hosts_filename.is_file():
@@ -341,6 +388,17 @@ class Inventory:
                     raise PossibleInventoryError(f"Bad groups file, unexpected member name '{member}' in group '{group}'")
         self.check_groups_recursion()
 
+    def set_groups_hosts_sets(self):
+        def set_groups_hosts(group_name, group):
+            for member in group:
+                if member in self.hosts:
+                    self.hosts[member].groups.add(group_name)
+                    self.groups[group_name].hosts.add(member)
+                else:
+                    set_groups_hosts(group_name, self.groups[member])
+        for group_name in self.groups:
+            set_groups_hosts(group_name, self.groups[group_name])
+
     def create_ungrouped_group(self):
         temp = self.all_group.members.copy()
         for group in self.groups:
@@ -353,6 +411,7 @@ class Inventory:
             self.ungrouped_group.add(host)
 
     def parse_vars(self):
+        group_expected = True
         if self.vars_filename.is_file():
             try:
                 with open(self.vars_filename) as vars_file:
@@ -366,6 +425,12 @@ class Inventory:
                                     obj = list(entry.keys())[0]
                                     if obj not in self.hosts and obj not in self.groups:
                                         raise PossibleInventoryError(f"Bad vars file {self.vars_filename}, unexpected host/group name '{obj}'")
+                                    if obj in self.hosts:
+                                        group_expected = False
+                                    if obj in self.groups:
+                                        if not group_expected:
+                                            raise PossibleInventoryError(f"Bad vars file {self.vars_filename}, unexpected group '{obj}' vars after host vars")
+                                    self.vars_priority.add(obj)
                                     obj_vars = entry[obj]
                                     if isinstance(obj_vars, dict):
                                         for obj_var in obj_vars:
@@ -385,19 +450,36 @@ class Inventory:
         else:
             raise PossibleInventoryError(f"Vars file '{self.vars_filename}' not exists")
 
+    def merge_vars(self):
+        def copy_vars(from_name, to_host):
+            host = self.hosts[to_host]
+            for var in self.vars[from_name]:
+                host.vars[var]= self.vars[from_name][var]
+        for from_name in self.vars_priority:
+            if from_name in self.groups:
+                for to_host in self.groups[from_name].hosts:
+                    copy_vars(from_name, to_host)
+            else:
+                to_host = from_name
+                copy_vars(from_name, to_host)
+        pass
+
     def dump(self):
-        inventory = dict()
-        inventory['hosts'] = hosts = list()
+        inventory = list()
+        hosts = list()
+        inventory.append({'hosts': hosts})
         for host in self.hosts:
             temp_dict = dict()
-            temp_dict[host] = self.hosts[host].__dict__
+            temp_dict[host] = self.hosts[host]._dict()
             hosts.append(temp_dict)
-        inventory['groups'] = groups = list()
+        groups = list()
+        inventory.append({'groups': groups})
         for group in self.groups:
             temp_dict = dict()
             temp_dict[group] = list(self.groups[group])
             groups.append(temp_dict)
-        inventory['vars'] = vars = list()
+        vars = list()
+        inventory.append({'vars': vars})
         for obj in self.vars:
             temp_dict = dict()
             temp_dict[obj] = dict()
@@ -405,8 +487,30 @@ class Inventory:
                 value = self.vars[obj][obj_var]
                 temp_dict[obj][obj_var] = value
             vars.append(temp_dict)
+        vars_priority = list()
+        inventory.append({'vars_priority': vars_priority})
+        for obj in self.vars_priority:
+            temp_dict = dict()
+            temp_dict[obj] = self.vars_priority[obj]
+            vars_priority.append(temp_dict)
+        hosts_groups = list()
+        inventory.append({'hosts_groups': hosts_groups})
+        for host in self.hosts:
+            temp_dict = dict()
+            temp_dict[host] = sorted(self.hosts[host].groups)
+            hosts_groups.append(temp_dict)
+        groups_hosts = list()
+        inventory.append({'groups_hosts': groups_hosts})
+        for group in self.groups:
+            temp_dict = dict()
+            temp_dict[group] = sorted(self.groups[group].hosts)
+            groups_hosts.append(temp_dict)
         return yaml.dump(inventory)
 
-
     def dump_vars(self):
-        raise NotImplementedError
+        hosts_vars = list()
+        for host in sorted(self.hosts):
+            temp_dict = dict()
+            temp_dict[host] = self.hosts[host].vars
+            hosts_vars.append(temp_dict)
+        return yaml.dump(hosts_vars)
