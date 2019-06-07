@@ -261,6 +261,9 @@ class VarsPriority:
         else:
             self._add(name)
 
+    def __getitem__(self, key):
+        return self._dict.__getitem__(key)
+
     def __iter__(self):
         return self._list.__iter__()
 
@@ -278,7 +281,7 @@ class VarsPriority:
 
 
 class Inventory:
-    def __init__(self, path):
+    def __init__(self, config):
         self.all_group = Group('all')
         self.ungrouped_group = Group('ungrouped')
         self.hosts = Hosts()
@@ -288,7 +291,7 @@ class Inventory:
         self.vars = Vars()
         self.vars_priority = VarsPriority()
 
-        path = Path(path).resolve()
+        path = config.workdir / config.inventory
         if not path.exists() or not path.is_dir():
             raise PossibleInventoryError(f'Inventory directory {path} not exists')
         self.inventory_directory = path

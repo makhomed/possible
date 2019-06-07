@@ -6,6 +6,18 @@ from pathlib import Path
 
 from .exceptions import PossibleConfigError
 
+
+class UndefinedValue:
+    def __bool__(self):
+        return False
+
+class UndefinedConfig:
+    def __getattr__(self, key):
+        return UndefinedValue()
+    def __contains__(self, key):
+        return True
+
+
 class DefaultConfig:
     config = 'config.yaml'
     posfile = 'posfile.py'
@@ -18,113 +30,163 @@ class DefaultConfig:
 
 class Config():
     @staticmethod
-    def only_public_members(source_dict):
-        dest_dict = dict()
-        for key in source_dict:
-            if not key.startswith('_'):
-                dest_dict[key]=source_dict[key]
-        return dest_dict
+    def undefined_config():
+        return UndefinedConfig()
 
-    def __init__(self, config=DefaultConfig.config, args=None):
-        default_config = config == DefaultConfig.config
-        self.__dict__['__args'] = args
-        self.__dict__['__config'] = Config.only_public_members(DefaultConfig.__dict__)
-        self.__dict__['__config_filename'] = config = Path(config).resolve()
-        if config.is_file():
+    @staticmethod
+    def is_defined(value):
+        return not isinstance(value, UndefinedValue)
+
+    @staticmethod
+    def first_if_defined(value1, value2):
+        if Config.is_defined(value1):
+            return value1
+        else:
+            return value2
+
+    @staticmethod
+    def check_config(conf, config_filename):
+        if 'workdir' in conf:
+            raise PossibleConfigError(f"Bad config file '{config_filename}', property 'workdir' can't be defined here")
+
+        if 'config' in conf:
+            if not isinstance(conf['config'], str):
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'config' must be string type")
+            if not conf['config'].endswith('.yaml'):
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'config' must have .yaml extension")
+            if '/' in conf['config']:
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'config' must be relative filename")
+
+        if 'posfile' in conf:
+            if not isinstance(conf['posfile'], str):
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'posfile' must be string type")
+            if not conf['posfile'].endswith('.py'):
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'posfile' must have .py extension")
+            if '/' in conf['posfile']:
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'posfile' must be relative filename")
+
+        if 'inventory' in conf:
+            if not isinstance(conf['inventory'], str):
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'inventory' must be string type")
+            if '/' in conf['inventory']:
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'inventory' must be relative dirname")
+
+        if 'verbosity' in conf:
+            if not isinstance(conf['verbosity'], int):
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'verbosity' must be int type")
+            if conf['verbosity'] < 0 or conf['verbosity'] > 7:
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'verbosity' must be between 0 and 7")
+
+        if 'thread' in conf:
+            if not isinstance(conf['threads'], int):
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'threads' must be int type")
+            if conf['threads'] < 1 or conf['threads'] > 1024:
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'threads' must be between 1 and 1024")
+
+        if 'color' in conf:
+            if not isinstance(conf['color'], bool):
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'color' must be bool type")
+
+        if 'target' in conf:
+            if conf['target'] is not None and not isinstance(conf['target'], str):
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'target' must be string type")
+
+        if 'task' in conf:
+            if conf['task'] is not None and not isinstance(conf['task'], str):
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'task' must be string type")
+
+        for key in conf:
+            if key not in DefaultConfig.__dict__:
+                raise PossibleConfigError(f"Unknown property '{key}' in config file '{config_filename}'")
+
+
+    @staticmethod
+    def parse_config(config_filename):
+        if config_filename.is_file():
             try:
-                with open(config) as config_file:
-                    content = yaml.safe_load(config_file)
-                    if content is None:
-                        raise PossibleConfigError(f"Config file {config} is empty")
-                    elif isinstance(content, dict):
-                        self.__dict__['__config'].update(content)
+                with open(config_filename) as config_file:
+                    conf = yaml.safe_load(config_file)
+                    if conf is None:
+                        return dict()
+                    elif isinstance(conf, dict):
+                        Config.check_config(conf, config_filename)
+                        return conf
                     else:
-                        raise PossibleConfigError(f"Config file {config} content must be dictionary type, given:\n\n{content}\n")
+                        raise PossibleConfigError(f"Config file {config_filename} content must be yaml/json encoded dictionary, instead given:\n\n{conf}\n")
             except yaml.YAMLError as e:
                 raise PossibleConfigError(f"Error parsing config: {e}")
-        elif not default_config:
-                raise PossibleConfigError(f"Config file '{config}' not exists")
-        if args:
-            self.config = args.config
+        else:
+            raise PossibleConfigError(f"Config file '{config_filename}' not exists")
+
+    def __init__(self, args):
+        workdir = Config.first_if_defined(args.workdir, None)
+        if workdir is None:
+            search_workdir = True
+            workdir = Path.cwd()
+        else:
+            search_workdir = False
+            workdir = Path(workdir)
+        config = Config.first_if_defined(args.config, DefaultConfig.config)
+
+        while True:
+            config_filename = workdir / config
+            if config_filename.is_file():
+                break
+            else:
+                if search_workdir:
+                    if workdir == Path('/'):
+                        raise PossibleConfigError(f"Can't find config file '{config}' in '{Path.cwd()}' and all upper directories")
+                    else:
+                        workdir = workdir.parent
+                else:
+                    raise PossibleConfigError(f"Can't find config file '{config}' in '{workdir}' directory")
+
+        conf = Config.parse_config(config_filename)
+        if 'config' in conf:
+            if len(conf) == 1:
+                config = conf['config']
+                second_config_filename = workdir / config
+                second_conf = Config.parse_config(second_config_filename)
+                if 'config' in second_conf:
+                    raise PossibleConfigError(f"Property 'config' is not allowed in second-level config file '{second_config_filename}'")
+                conf.update(second_conf)
+            else:
+                raise PossibleConfigError(f"Property 'config' present in first-level config file '{config_filename}', in this case no other properties allowed, but given:\n\n{conf}\n")
+
+        self.workdir = workdir
+        self.config = config
+
+        if Config.is_defined(args.posfile):
             self.posfile = args.posfile
+        else:
+            self.posfile = conf.get('posfile', DefaultConfig.posfile)
+
+        if Config.is_defined(args.inventory):
             self.inventory = args.inventory
+        else:
+            self.inventory = conf.get('inventory', DefaultConfig.inventory)
+
+        if Config.is_defined(args.verbosity):
             self.verbosity = args.verbosity
+        else:
+            self.verbosity = conf.get('verbosity', DefaultConfig.verbosity)
+
+        if Config.is_defined(args.threads):
             self.threads = args.threads
+        else:
+            self.threads = conf.get('threads', DefaultConfig.threads)
+
+        if Config.is_defined(args.target):
             self.target = args.target
+        else:
+            self.target = conf.get('target', DefaultConfig.target)
+
+        if Config.is_defined(args.task):
             self.task = args.task
-        self.check_config()
+        else:
+            self.task = conf.get('task', DefaultConfig.task)
 
     def dump(self):
-        return yaml.dump(self.__dict__['__config'])
-
-    def check_config(self):
-        config = self.__dict__['__config_filename']
-        if not isinstance(self.config, str):
-            raise PossibleConfigError("Property 'config' must be string type")
-        if not self.config.endswith('.yaml'):
-            raise PossibleConfigError("Property 'config' must have .yaml extension")
-        if '/' in self.config:
-            raise PossibleConfigError("Property 'config' must be relative filename")
-
-        if not isinstance(self.posfile, str):
-            raise PossibleConfigError("Property 'posfile' must be string type")
-        if not self.posfile.endswith('.py'):
-            raise PossibleConfigError("Property 'posfile' must have .py extension")
-        if '/' in self.posfile:
-            raise PossibleConfigError("Property 'posfile' must be relative filename")
-
-        if not isinstance(self.inventory, str):
-            raise PossibleConfigError("Property 'inventory' must be string type")
-        if '/' in self.inventory:
-            raise PossibleConfigError("Property 'inventory' must be relative dirname")
-
-        if not isinstance(self.verbosity, int):
-            raise PossibleConfigError("Property 'verbosity' must be int type")
-        if self.verbosity < 0 or self.verbosity > 7:
-            raise PossibleConfigError("Property 'verbosity' must be between 0 and 7")
-
-        if not isinstance(self.threads, int):
-            raise PossibleConfigError("Property 'threads' must be int type")
-        if self.threads < 1 or self.threads > 1024:
-            raise PossibleConfigError("Property 'threads' must be between 1 and 1024")
-
-        if not isinstance(self.color, bool):
-            raise PossibleConfigError("Property 'color' must be bool type")
-
-        if self.target is not None and not isinstance(self.target, str):
-            raise PossibleConfigError("Property 'target' must be string type")
-
-        if self.task is not None and not isinstance(self.task, str):
-            raise PossibleConfigError("Property 'task' must be string type")
-
-        for key in self.__dict__['__config']:
-            if key not in DefaultConfig.__dict__:
-                raise PossibleConfigError(f"Unknown property '{key}' in config {config}")
-
-    def __getitem__(self, key):
-        return self.__dict__['__config'].__getitem__(key)
-
-    def __setitem__(self, key, value):
-        return self.__dict__['__config'].__setitem__(key, value)
-
-    def __delitem__(self, key):
-        return self.__dict__['__config'].__delitem__(key)
-
-    def __getattr__(self, key):
-        try:
-            return self.__dict__['__config'].__getitem__(key)
-        except KeyError:
-            raise AttributeError(key)
-
-    def __setattr__(self, key, value):
-        return self.__dict__['__config'].__setitem__(key, value)
-
-    def __delattr__(self, key):
-        return self.__dict__['__config'].__delitem__(key)
-
-    def __repr__(self):
-        return self.__dict__['__config'].__repr__()
-
-    def __str__(self):
-        return self.__dict__['__config'].__str__()
-
+        temp_dict = dict(self.__dict__)
+        temp_dict['workdir'] = str( temp_dict['workdir'])
+        return yaml.dump(temp_dict)
