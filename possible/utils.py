@@ -53,5 +53,3 @@ class Debug(metaclass=Singleton):
 
 debug = Debug()
 
-class Display(metaclass=Singleton):
-        pass

@@ -20,13 +20,12 @@ class UndefinedConfig:
 
 class DefaultConfig:
     config = 'config.yaml'
-    posfile = 'posfile.py'
+    posfile = 'posfile'
     inventory = 'inventory'
     verbosity = 0
     threads = 1
-    color = True
-    target = None
     task = None
+    args = []
 
 class Config():
     @staticmethod
@@ -60,10 +59,12 @@ class Config():
         if 'posfile' in conf:
             if not isinstance(conf['posfile'], str):
                 raise PossibleConfigError(f"Bad config file '{config_filename}', property 'posfile' must be string type")
-            if not conf['posfile'].endswith('.py'):
-                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'posfile' must have .py extension")
+            if conf['posfile'].endswith('.py'):
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'posfile' must not have .py extension")
             if '/' in conf['posfile']:
                 raise PossibleConfigError(f"Bad config file '{config_filename}', property 'posfile' must be relative filename")
+            if not re.match(r'[_a-zA-Z][_A-Za-z0-9]', conf['posfile']):
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'posfile' must be valid Python identifier")
 
         if 'inventory' in conf:
             if not isinstance(conf['inventory'], str):
@@ -83,18 +84,13 @@ class Config():
             if conf['threads'] < 1 or conf['threads'] > 1024:
                 raise PossibleConfigError(f"Bad config file '{config_filename}', property 'threads' must be between 1 and 1024")
 
-        if 'color' in conf:
-            if not isinstance(conf['color'], bool):
-                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'color' must be bool type")
-
-        if 'target' in conf:
-            if conf['target'] is not None and not isinstance(conf['target'], str):
-                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'target' must be string type")
-
         if 'task' in conf:
             if conf['task'] is not None and not isinstance(conf['task'], str):
                 raise PossibleConfigError(f"Bad config file '{config_filename}', property 'task' must be string type")
 
+        if 'args' in conf:
+            if not isinstance(conf['args'], list):
+                raise PossibleConfigError(f"Bad config file '{config_filename}', property 'args' must be list type")
         for key in conf:
             if key not in DefaultConfig.__dict__:
                 raise PossibleConfigError(f"Unknown property '{key}' in config file '{config_filename}'")
@@ -176,15 +172,15 @@ class Config():
         else:
             self.threads = conf.get('threads', DefaultConfig.threads)
 
-        if Config.is_defined(args.target):
-            self.target = args.target
-        else:
-            self.target = conf.get('target', DefaultConfig.target)
-
         if Config.is_defined(args.task):
             self.task = args.task
         else:
             self.task = conf.get('task', DefaultConfig.task)
+
+        if Config.is_defined(args.args):
+            self.args = args.args
+        else:
+            self.args = conf.get('args', DefaultConfig.args)
 
     def dump(self):
         temp_dict = dict(self.__dict__)
