@@ -1,9 +1,9 @@
 
 __all__ = ['debug', 'eprint', 'Singleton']
 
-import traceback
-from threading import RLock
 import sys
+import threading
+import traceback
 
 def eprint(*args, **kwargs):
     if debug and args and isinstance(args[0], Exception):
@@ -20,7 +20,7 @@ class Singleton(type):
     def __init__(cls, name, bases, dct):
         super(Singleton, cls).__init__(name, bases, dct)
         cls.__instance = None
-        cls.__rlock = RLock()
+        cls.__rlock = threading.RLock()
 
     def __call__(cls, *args, **kw):
         if cls.__instance is not None:
