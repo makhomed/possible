@@ -294,7 +294,7 @@ class Inventory:
         path = config.workdir / 'inventory'
         if not path.exists() or not path.is_dir():
             raise PossibleInventoryError(f"Inventory directory '{path}' not exists")
-        self.inventory_directory = path
+        self.inventory = path
         self.hosts_filename = path / 'hosts.yaml'
         self.parse_hosts()
         self.groups_filename = path / 'groups.yaml'

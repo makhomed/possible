@@ -1,27 +1,32 @@
 
-__all__ = ['application']
-
-import inspect
+__all__ = ['Application']
 
 from .exceptions import PossibleUserError
+from .runtime import tasks
 
 class Application:
-    def __init__(self):
-        self.config = None
-        self.posfile = None
-        self.inventory = None
-        self.tasks = dict()
+    def __init__(self, config, posfile, inventory):
+        self.config = config
+        self.posfile = posfile
+        self.inventory = inventory
+
+    def get_task(self):
+        task = self.config.args.task
+        if task not in tasks:
+            raise PossibleUserError(f"Task '{task}' not found in posfile '{self.posfile.posfile}'")
+        return tasks[task]
+
+    def get_hosts(self):
+        target = self.config.args.target
+        if target in self.inventory.hosts:
+            return [target]
+        elif target in self.inventory.groups:
+            result = list(self.inventory.groups[target].hosts)
+            result.sort()
+            return result
+        else:
+            raise PossibleUserError(f"Target '{target}' not found in inventory '{self.inventory.inventory}'")
 
     def run(self):
-        name = self.config.args.task
-        target = self.config.args.target
-        if name is None:
-            raise PossibleUserError("Task must be defined")
-        if name not in self.tasks:
-            raise PossibleUserError(f"Task '{name}' not found in posfile '{self.posfile.posfile}'")
-        task = self.tasks[name]
-        signature = inspect.signature(task)
-        task(target)
-
-application = Application()
+        self.get_task()(self.get_hosts())
 

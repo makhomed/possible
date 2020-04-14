@@ -3,22 +3,25 @@ __all__ = ['task']
 
 import functools
 
-from possible.engine import application
-from possible.engine import PossiblePosfileError
+from .engine import tasks
+from .engine import PossiblePosfileError
 
 def task(argument):
-    def decorator(task):
-        if name in application.tasks:
+
+    def decorator(func):
+        if name in tasks:
             raise PossiblePosfileError(f"Task '{name}' already defined")
-        application.tasks[name] = task
-        @functools.wraps(task)
+        tasks[name] = func
+
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            return task(*args, **kwargs)
+            return func(*args, **kwargs)
         return wrapper
+
     if callable(argument):
-        task = argument
-        name = task.__name__
-        return decorator(task)
+        func = argument
+        name = func.__name__
+        return decorator(func)
     else:
         name = argument
         return decorator

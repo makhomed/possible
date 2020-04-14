@@ -4,7 +4,7 @@ __all__ = ['main']
 import argparse
 import sys
 
-from .app import application
+from .app import Application
 from .config import Config
 from .exceptions import PossibleError, PossibleInventoryError, PossiblePosfileError, PossibleUserError, PossibleRuntimeError
 from .inventory import Inventory
@@ -37,7 +37,7 @@ def parse_all():
         print(inventory.dump_vars(), file=sys.stdout, flush=True)
         sys.exit(0)
     if args.list_tasks or args.task is None and args.target is None:
-        print(posfile.tasks(), file=sys.stdout, flush=True)
+        print(posfile.list_of_tasks(), file=sys.stdout, flush=True)
         sys.exit(0)
     return config, posfile, inventory
 
@@ -45,10 +45,7 @@ def main():
     try:
         sys.dont_write_bytecode = True
         config, posfile, inventory = parse_all()
-        application.config = config
-        application.posfile = posfile
-        application.inventory = inventory
-        application.run()
+        Application(config, posfile, inventory).run()
         sys.exit(0)
     except PossibleRuntimeError as e:
         debug.enable()

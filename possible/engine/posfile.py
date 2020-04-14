@@ -5,8 +5,8 @@ import importlib
 import inspect
 import sys
 
-from .app import application
 from .exceptions import PossiblePosfileError
+from .runtime import tasks
 
 class Posfile:
     def __init__(self, config):
@@ -18,17 +18,17 @@ class Posfile:
             sys.path.insert(0, str(config.workdir))
         self.module = importlib.import_module('posfile')
 
-    def tasks(self):
+    def list_of_tasks(self):
         desc = dict()
-        for name in application.tasks:
-            task = application.tasks[name]
+        for name in tasks:
+            task = tasks[name]
             if task.__doc__ is not None:
                 desc[name] = task.__doc__.split('\n')[0].strip()
             else:
                 desc[name] = ''
         sigs = dict()
-        for name in application.tasks:
-            task = application.tasks[name]
+        for name in tasks:
+            task = tasks[name]
             sigs[name] = name + str(inspect.signature(task))
         nlen = 0
         for name in sigs:
@@ -38,7 +38,7 @@ class Posfile:
         for name in sorted(sigs):
             description = desc[name]
             signature = sigs[name]
-            line = f"{signature:{nlen}} {description}"
+            line = f"{signature:{nlen}}  {description}"
             lines.append(line)
         return '\n'.join(lines)
 
