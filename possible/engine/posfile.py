@@ -18,22 +18,17 @@ class Posfile:
         self.module = importlib.import_module('posfile')
 
     def list_of_tasks(self):
-        desc = dict()
+        description = dict()
         for name in tasks:
             task = tasks[name]
             if task.__doc__ is not None:
-                desc[name] = task.__doc__.split('\n')[0].strip()
+                description[name] = task.__doc__.strip().split('\n')[0].strip()
             else:
-                desc[name] = ''
-        nlen = 0
-        for name in tasks:
-            if len(name) > nlen:
-                nlen = len(name)
+                description[name] = ''
+        nlen = len(max(tasks.keys(), key=len))
         lines = list()
         for name in tasks:
-            description = desc[name]
-            line = f"{name:{nlen}} # {description}"
-            lines.append(line)
+            lines.append(f"{name:{nlen}} # {description[name]}")
         lines.sort()
         return '\n'.join(lines)
 

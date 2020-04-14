@@ -1,5 +1,7 @@
 
-__all__ = ['tasks']
+__all__ = ['tasks', 'hosts']
 
-tasks = dict()
+tasks = {}
+
+hosts = []
 
