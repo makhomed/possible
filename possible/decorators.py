@@ -1,28 +1,21 @@
 
 __all__ = ['task']
 
-import functools
-
 from .engine import tasks
 from .engine import PossiblePosfileError
 
-def task(argument):
+def task(arg):
 
     def decorator(func):
         if name in tasks:
             raise PossiblePosfileError(f"Task '{name}' already defined")
         tasks[name] = func
+        return func
 
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
-        return wrapper
-
-    if callable(argument):
-        func = argument
-        name = func.__name__
-        return decorator(func)
+    if callable(arg):
+        name = arg.__name__
+        return decorator(arg)
     else:
-        name = argument
+        name = arg
         return decorator
 

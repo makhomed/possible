@@ -2,7 +2,6 @@
 __all__ = ['Posfile']
 
 import importlib
-import inspect
 import sys
 
 from .exceptions import PossiblePosfileError
@@ -26,19 +25,15 @@ class Posfile:
                 desc[name] = task.__doc__.split('\n')[0].strip()
             else:
                 desc[name] = ''
-        sigs = dict()
-        for name in tasks:
-            task = tasks[name]
-            sigs[name] = name + str(inspect.signature(task))
         nlen = 0
-        for name in sigs:
-            if len(sigs[name]) > nlen:
-                nlen = len(sigs[name])
+        for name in tasks:
+            if len(name) > nlen:
+                nlen = len(name)
         lines = list()
-        for name in sorted(sigs):
+        for name in tasks:
             description = desc[name]
-            signature = sigs[name]
-            line = f"{signature:{nlen}}  {description}"
+            line = f"{name:{nlen}} # {description}"
             lines.append(line)
+        lines.sort()
         return '\n'.join(lines)
 
