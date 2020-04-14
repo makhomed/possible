@@ -10,13 +10,13 @@ from .exceptions import PossiblePosfileError
 
 class Posfile:
     def __init__(self, config):
-        posfile = config.workdir / (config.posfile + '.py')
+        posfile = config.workdir / 'posfile.py'
         if not posfile.exists() or not posfile.is_file():
             raise PossiblePosfileError(f"Posfile '{posfile}' not exists")
         self.posfile = posfile
         if config.workdir not in sys.path:
             sys.path.insert(0, str(config.workdir))
-        self.module = importlib.import_module(config.posfile)
+        self.module = importlib.import_module('posfile')
 
     def tasks(self):
         desc = dict()

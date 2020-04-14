@@ -6,9 +6,13 @@ import threading
 import traceback
 
 def eprint(*args, **kwargs):
-    if debug and args and isinstance(args[0], Exception):
+    if args and isinstance(args[0], Exception):
         e = args[0]
-        print(''.join(traceback.format_exception(type(e), e, e.__traceback__)), file=sys.stderr, flush=True)
+        if debug:
+            print(''.join(traceback.format_exception(type(e), e, e.__traceback__)), file=sys.stderr, flush=True)
+        else:
+            print(type(e).__name__, end=': ', file=sys.stderr, flush=True)
+            print(*args, file=sys.stderr, flush=True, **kwargs)
     else:
         print(*args, file=sys.stderr, flush=True, **kwargs)
 
@@ -34,7 +38,7 @@ class Singleton(type):
 
 class Debug(metaclass=Singleton):
         def __init__(self):
-            self.__debug = True
+            self.__debug = False
 
         def __bool__(self):
             return self.__debug

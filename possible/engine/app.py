@@ -3,27 +3,25 @@ __all__ = ['application']
 
 import inspect
 
-from .exceptions import PossibleApplicationError
+from .exceptions import PossibleUserError
 
 class Application:
     def __init__(self):
         self.config = None
-        self.inventory = None
         self.posfile = None
+        self.inventory = None
         self.tasks = dict()
 
     def run(self):
-        name = self.config.task
-        args = self.config.args
+        name = self.config.args.task
+        target = self.config.args.target
         if name is None:
-            raise PossibleApplicationError(f"Task must be defined in command line or in configuration file '{self.config.workdir/self.config.config}'")
+            raise PossibleUserError("Task must be defined")
         if name not in self.tasks:
-            raise PossibleApplicationError(f"Task '{name}' not found in posfile '{self.posfile.posfile}'")
+            raise PossibleUserError(f"Task '{name}' not found in posfile '{self.posfile.posfile}'")
         task = self.tasks[name]
         signature = inspect.signature(task)
-        if len(signature.parameters) != len(args):
-            raise PossibleApplicationError(f"Task '{task}' expect {len(signature.parameters)} parameters, but {len(self.config.args)} parameters given")
-        task(*args)
+        task(target)
 
 application = Application()
 

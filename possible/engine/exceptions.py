@@ -1,15 +1,13 @@
 
-__all__ = ['PossibleError', 'PossibleConfigError', 'PossibleInventoryError', 'PossiblePosfileError', 'PossibleApplicationError', 'PossibleRuntimeError']
+__all__ = ['PossibleError', 'PossibleInventoryError', 'PossiblePosfileError', 'PossibleUserError', 'PossibleRuntimeError']
 
 class PossibleError(Exception): pass
-
-class PossibleConfigError(PossibleError): pass
 
 class PossibleInventoryError(PossibleError): pass
 
 class PossiblePosfileError(PossibleError): pass
 
-class PossibleApplicationError(PossibleError): pass
+class PossibleUserError(PossibleError): pass
 
 class PossibleRuntimeError(PossibleError): pass
 

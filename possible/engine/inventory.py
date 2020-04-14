@@ -291,7 +291,7 @@ class Inventory:
         self.vars = Vars()
         self.vars_priority = VarsPriority()
 
-        path = config.workdir / config.inventory
+        path = config.workdir / 'inventory'
         if not path.exists() or not path.is_dir():
             raise PossibleInventoryError(f"Inventory directory '{path}' not exists")
         self.inventory_directory = path
