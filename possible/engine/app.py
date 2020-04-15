@@ -40,6 +40,8 @@ class Application:
                 func_name = tasks_names[pretty_name]
             else:
                 func_name = pretty_name
+            if func_name not in tasks_permissions:
+                tasks_permissions[func_name] = set()
             for permission in tasks_permissions[func_name]:
                 if permission not in self.inventory.hosts and permission not in self.inventory.groups:
                     raise PossibleUserError(f"Unknown permission '{permission}' in @allow list of function '{func_name}'")
