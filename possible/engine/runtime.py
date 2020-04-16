@@ -1,11 +1,10 @@
 
-__all__ = ['hosts', 'tasks', 'tasks_names', 'tasks_permissions']
+__all__ = ['_hosts', '_tasks', '_task_names_to_func_names', '_funcs_permissions']
 
-hosts = []
+_hosts = []
 
-tasks = {}
+_tasks = {}
 
-tasks_names = {}
+_task_names_to_func_names = {}
 
-tasks_permissions = {}
-
+_funcs_permissions = {}

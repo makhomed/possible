@@ -1,5 +1,5 @@
 
-__all__ = ['debug', 'eprint', 'Singleton']
+__all__ = ['_debug', 'eprint', 'Singleton']
 
 import sys
 import threading
@@ -8,7 +8,7 @@ import traceback
 def eprint(*args, **kwargs):
     if args and isinstance(args[0], Exception):
         e = args[0]
-        if debug:
+        if _debug:
             print(''.join(traceback.format_exception(type(e), e, e.__traceback__)), file=sys.stderr, flush=True)
         else:
             print(type(e).__name__, end=': ', file=sys.stderr, flush=True)
@@ -55,5 +55,5 @@ class Debug(metaclass=Singleton):
             else:
                 return "debug disabled"
 
-debug = Debug()
+_debug = Debug()
 

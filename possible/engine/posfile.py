@@ -5,7 +5,7 @@ import importlib
 import sys
 
 from .exceptions import PossiblePosfileError
-from .runtime import tasks
+from .runtime import _tasks
 
 class Posfile:
     def __init__(self, config):
@@ -19,15 +19,15 @@ class Posfile:
 
     def list_of_tasks(self):
         description = dict()
-        for name in tasks:
-            task = tasks[name]
+        for name in _tasks:
+            task = _tasks[name]
             if task.__doc__ is not None:
                 description[name] = task.__doc__.strip().split('\n')[0].strip()
             else:
                 description[name] = ''
-        nlen = len(max(tasks.keys(), key=len))
+        nlen = len(max(_tasks.keys(), key=len))
         lines = list()
-        for name in tasks:
+        for name in _tasks:
             lines.append(f"{name:{nlen}} # {description[name]}")
         lines.sort()
         return '\n'.join(lines)
