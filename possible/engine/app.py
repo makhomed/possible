@@ -22,7 +22,9 @@ class Application:
     def get_hosts(self):
         global _hosts 
         target = self.config.args.target
-        if target in self.inventory.hosts:
+        if target is None:
+            result = []
+        elif target in self.inventory.hosts:
             result = [target]
         elif target in self.inventory.groups:
             result = list(self.inventory.groups[target].hosts)
