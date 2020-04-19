@@ -7,6 +7,7 @@ import sys
 from .exceptions import PossiblePosfileError
 from .runtime import _tasks
 
+
 class Posfile:
     def __init__(self, config):
         posfile = config.workdir / 'posfile.py'
@@ -31,4 +32,3 @@ class Posfile:
             lines.append(f"{name:{nlen}} # {description[name]}")
         lines.sort()
         return '\n'.join(lines)
-

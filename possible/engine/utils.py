@@ -1,9 +1,9 @@
 
-__all__ = ['_debug', 'eprint', 'Singleton']
+__all__ = ['_debug', 'eprint']
 
 import sys
-import threading
 import traceback
+
 
 def eprint(*args, **kwargs):
     if args and isinstance(args[0], Exception):
@@ -16,44 +16,25 @@ def eprint(*args, **kwargs):
     else:
         print(*args, file=sys.stderr, flush=True, **kwargs)
 
-class Singleton(type):
-    """Metaclass for classes that wish to implement Singleton
-    functionality.  If an instance of the class exists, it's returned,
-    otherwise a single instance is instantiated and returned.
-    """
-    def __init__(cls, name, bases, dct):
-        super(Singleton, cls).__init__(name, bases, dct)
-        cls.__instance = None
-        cls.__rlock = threading.RLock()
 
-    def __call__(cls, *args, **kw):
-        if cls.__instance is not None:
-            return cls.__instance
+class Debug():
+    def __init__(self):
+        self.__debug = False
 
-        with cls.__rlock:
-            if cls.__instance is None:
-                cls.__instance = super(Singleton, cls).__call__(*args, **kw)
+    def __bool__(self):
+        return self.__debug
 
-        return cls.__instance
+    def enable(self):
+        self.__debug = True
 
-class Debug(metaclass=Singleton):
-        def __init__(self):
-            self.__debug = False
+    def disable(self):
+        self.__debug = False
 
-        def __bool__(self):
-            return self.__debug
+    def __str__(self):
+        if self.__debug:
+            return "debug enabled"
+        else:
+            return "debug disabled"
 
-        def enable(self):
-            self.__debug = True
-
-        def disable(self):
-            self.__debug = False
-
-        def __str__(self):
-            if self.__debug:
-                return "debug enabled"
-            else:
-                return "debug disabled"
 
 _debug = Debug()
-

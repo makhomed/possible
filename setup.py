@@ -2,13 +2,16 @@
 import codecs
 import os.path
 import re
-from setuptools import setup, find_packages
+from setuptools import setup
+
 
 project_root = os.path.abspath(os.path.dirname(__file__))
+
 
 def read(*parts):
     with codecs.open(os.path.join(project_root, *parts), encoding='UTF-8') as f:
         return f.read()
+
 
 def find_version(*file_paths):
     version_file = read(*file_paths)
@@ -17,12 +20,14 @@ def find_version(*file_paths):
         return version_match.group(1)
     raise RuntimeError("Unable to find version string.")
 
+
 def long_description():
     readme_filename = os.path.join(project_root, 'README.rst')
     with codecs.open(readme_filename, encoding='UTF-8') as readme_file:
         lines = [line.rstrip('\n') for line in readme_file]
     lines = lines[4:]
     return "\n".join(lines)
+
 
 setup(
     name='possible',
@@ -40,7 +45,7 @@ setup(
     include_package_data=True,
     install_requires=['PyYAML>=5.3.1', 'Jinja2>=2.11.2'],
     scripts=['bin/pos'],
-    classifiers=[ # https://pypi.org/classifiers/
+    classifiers=[  # https://pypi.org/classifiers/
         'Development Status :: 1 - Planning',
         'Environment :: Console',
         'Intended Audience :: Developers',

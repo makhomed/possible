@@ -4,6 +4,7 @@ __all__ = ['task', 'allow']
 from .engine import _tasks, _task_names_to_func_names, _funcs_permissions
 from .engine import PossibleUserError
 
+
 def task(arg):
 
     def decorator(func):
@@ -35,4 +36,3 @@ def allow(*args):
         raise PossibleUserError(f"Function '{func_name}': @allow list required.")
     else:
         return decorator
-

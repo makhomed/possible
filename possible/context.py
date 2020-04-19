@@ -7,7 +7,7 @@ from .engine import _hosts
 class Context:
 
     def __init__(self, host):
-        self.hlen= len(max(_hosts, key=len))
+        self.hlen = len(max(_hosts, key=len))
         self.host = host
 
     def name(self, message):
@@ -18,4 +18,3 @@ class Context:
 
     def var(self, name):
         return 'value'
-

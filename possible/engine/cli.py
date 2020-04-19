@@ -43,6 +43,7 @@ def parse_all():
         sys.exit(0)
     return config, posfile, inventory
 
+
 def main():
     try:
         sys.dont_write_bytecode = True

@@ -3,7 +3,6 @@ __all__ = ['Inventory']
 
 import re
 import yaml
-from pathlib import Path
 
 from .exceptions import PossibleInventoryError
 
@@ -17,7 +16,7 @@ class HostChecks:
             raise PossibleInventoryError(f"Bad host name '{name}', it can't be empty")
         elif name[-1] == '.':
             raise PossibleInventoryError(f"Bad host name '{name}', it can't end with dot")
-        elif  len(name) >= 253:
+        elif len(name) >= 253:
             raise PossibleInventoryError(f"Bad host name '{name}', it is very long")
         for char in name:
             if not (char == '.' or char == '-' or char == '_' or char >= 'A' and char <= 'Z' or char >= 'a' and char <= 'z' or char >= '0' and char <= '9'):
@@ -32,7 +31,7 @@ class HostChecks:
             raise PossibleInventoryError(f"Bad user name '{name}', it must be string")
         elif not name:
             raise PossibleInventoryError(f"Bad user name '{name}', it can't be empty")
-        elif  len(name) >= 32:
+        elif len(name) >= 32:
             raise PossibleInventoryError(f"Bad user name '{name}', it is very long")
         elif not re.fullmatch(r'^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,31}$', name):
             raise PossibleInventoryError(f"Bad user name '{name}', it contain not allowed symbols")
@@ -56,13 +55,15 @@ class HostChecks:
             if char < '\x20' or char > '\x7e':
                 raise PossibleInventoryError(f"Bad password '{password}', symbol '{char}' is not allowed")
 
+
 class DefaultHost:
-        name = None
-        host = None
-        user = 'root'
-        port = 22
-        password = None
-        sudo_password = None
+    name = None
+    host = None
+    user = 'root'
+    port = 22
+    password = None
+    sudo_password = None
+
 
 class Host:
     def __init__(self, name, config):
@@ -84,16 +85,17 @@ class Host:
             if config:
                 raise PossibleInventoryError(f"Bad host {name} configuration: {config}")
         else:
-                raise PossibleInventoryError(f"Bad host {name} configuration: {config}")
+            raise PossibleInventoryError(f"Bad host {name} configuration: {config}")
 
     def _dict(self):
-        return { 'name': self.name, 'host': self.host, 'user': self.user, 'port': self.port, 'password': self.password, 'sudo_password': self.sudo_password }
+        return {'name': self.name, 'host': self.host, 'user': self.user, 'port': self.port, 'password': self.password, 'sudo_password': self.sudo_password}
 
     def __str__(self):
         return self._dict().__str__()
 
     def __repr__(self):
         return self._dict().__repr__()
+
 
 class Hosts():
     def __init__(self):
@@ -122,6 +124,7 @@ class Hosts():
 
     def __repr__(self):
         return self.__hosts.__repr__()
+
 
 class Group:
     def __init__(self, name):
@@ -152,6 +155,7 @@ class Group:
 
     def __repr__(self):
         return self.__dict__.__repr__()
+
 
 class Groups:
     def __init__(self):
@@ -209,6 +213,7 @@ class ObjectVars:
 
     def __repr__(self):
         return self.__object_vars.__repr__()
+
 
 class Vars:
     def __init__(self):
@@ -291,18 +296,17 @@ class Inventory:
         self.vars = Vars()
         self.vars_priority = VarsPriority()
 
-        path = config.workdir / 'inventory'
-        if not path.exists() or not path.is_dir():
-            raise PossibleInventoryError(f"Inventory directory '{path}' not exists")
-        self.inventory = path
-        self.hosts_filename = path / 'hosts.yaml'
+        self.inventory = config.workdir / 'inventory'
+        if not self.inventory.exists() or not self.inventory.is_dir():
+            raise PossibleInventoryError(f"Inventory directory '{self.inventory}' not exists")
+        self.hosts_filename = self.inventory / 'hosts.yaml'
         self.parse_hosts()
-        self.groups_filename = path / 'groups.yaml'
+        self.groups_filename = self.inventory / 'groups.yaml'
         self.parse_groups()
         self.check_groups()
         self.create_ungrouped_group()
         self.set_groups_hosts_sets()
-        self.vars_filename = path / 'vars.yaml'
+        self.vars_filename = self.inventory / 'vars.yaml'
         self.parse_vars()
         self.merge_vars()
 
@@ -384,7 +388,7 @@ class Inventory:
     def check_groups(self):
         for name in self.hosts:
             if name in self.groups:
-                raise PossibleInventoryError(f"Bad inventory, name '{member}' used as name for host and name for group")
+                raise PossibleInventoryError(f"Bad inventory, name '{name}' used as name for host and name for group")
         for group in self.groups:
             for member in self.groups[group]:
                 if member not in self.hosts and member not in self.groups:
@@ -457,7 +461,7 @@ class Inventory:
         def copy_vars(from_name, to_host):
             host = self.hosts[to_host]
             for var in self.vars[from_name]:
-                host.vars[var]= self.vars[from_name][var]
+                host.vars[var] = self.vars[from_name][var]
         for from_name in self.vars_priority:
             if from_name in self.groups:
                 for to_host in self.groups[from_name].hosts:
