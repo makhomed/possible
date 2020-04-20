@@ -16,5 +16,8 @@ class Context:
     def run(self, command):
         print(f"{self.host:{self.hlen}} * run:", command)
 
-    def var(self, name):
-        return 'value'
+    def var(self, var_name):  # c.var.name or c.var['name']
+        return 'var value'
+
+    def fact(self, fact_name):
+        return 'fact value'  # c.fact.kvm or c.fact['kvm']
