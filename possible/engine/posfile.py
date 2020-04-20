@@ -4,8 +4,8 @@ __all__ = ['Posfile']
 import importlib
 import sys
 
-from .exceptions import PossiblePosfileError
-from .runtime import _tasks
+from possible.engine.exceptions import PossiblePosfileError
+from possible.engine.runtime import _tasks
 
 
 class Posfile:

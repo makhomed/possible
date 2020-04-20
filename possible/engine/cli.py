@@ -4,22 +4,23 @@ __all__ = ['main']
 import argparse
 import sys
 
-from .app import Application
-from .config import Config
-from .exceptions import PossibleError, PossibleInventoryError, PossiblePosfileError, PossibleUserError, PossibleRuntimeError
-from .inventory import Inventory
-from .posfile import Posfile
-from .utils import _debug, eprint
+from possible.engine.app import Application
+from possible.engine.config import Config
+from possible.engine.exceptions import PossibleError, PossibleInventoryError, PossiblePosfileError, PossibleUserError, PossibleRuntimeError
+from possible.engine.inventory import Inventory
+from possible.engine.posfile import Posfile
+from possible.engine.utils import _debug, eprint
 from possible import __version__
 
 
 def parse_args():
     parser = argparse.ArgumentParser(prog='pos', description="possible is configuration management tool")
     parser.add_argument('-v', '--version', action='version', version=__version__, help="show program's version and exit")
-    parser.add_argument('-I', '--dump-inventory', dest='dump_inventory', action="store_true", help="show inventory dump and exit")
-    parser.add_argument('-V', '--dump-vars', dest='dump_vars', action="store_true", help="show host vars dump and exit")
-    parser.add_argument('-L', '--list', dest='list_tasks', action="store_true", help="show list of tasks and exit")
+    parser.add_argument('-l', '--list', dest='list_tasks', action="store_true", help="show list all tasks and exit")
+    parser.add_argument('-E', '--dump-inventory', dest='dump_inventory', action="store_true", help="show inventory dump and exit")
+    parser.add_argument('-A', '--dump-vars', dest='dump_vars', action="store_true", help="show host vars dump and exit")
     parser.add_argument('-D', '--debug', dest='debug', action="store_true", help="run program in debug mode")
+    parser.add_argument('-e', '--env', dest='env', action="store", help="run in stage/prod/etc env")
     parser.add_argument('task', nargs='?', action="store", metavar="TASK", help="task to execute")
     parser.add_argument('target', nargs='?', action="store", metavar="TARGET", help="target for task")
     return parser.parse_args()

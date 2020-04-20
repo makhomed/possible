@@ -1,9 +1,9 @@
 
 __all__ = ['Application']
 
-from .exceptions import PossibleUserError
-from .runtime import _tasks, _task_names_to_func_names, _funcs_permissions
-from .runtime import _hosts  # noqa: F401
+from possible.engine.exceptions import PossibleUserError
+from possible.engine.runtime import _tasks, _task_names_to_func_names, _funcs_permissions
+from possible.engine.runtime import _hosts  # noqa: F401
 
 
 class Application:

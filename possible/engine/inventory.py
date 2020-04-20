@@ -4,7 +4,8 @@ __all__ = ['Inventory']
 import re
 import yaml
 
-from .exceptions import PossibleInventoryError
+from possible.engine.utils import eprint
+from possible.engine.exceptions import PossibleInventoryError
 
 
 class HostChecks:
@@ -296,7 +297,10 @@ class Inventory:
         self.vars = Vars()
         self.vars_priority = VarsPriority()
 
-        self.inventory = config.workdir / 'inventory'
+        if config.env:
+            self.inventory = config.workdir / ( 'inventory' + '.' + config.env )
+        else:
+            self.inventory = config.workdir / 'inventory'
         if not self.inventory.exists() or not self.inventory.is_dir():
             raise PossibleInventoryError(f"Inventory directory '{self.inventory}' not exists")
         self.hosts_filename = self.inventory / 'hosts.yaml'
