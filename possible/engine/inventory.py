@@ -4,7 +4,6 @@ __all__ = ['Inventory']
 import re
 import yaml
 
-from possible.engine.utils import eprint
 from possible.engine.exceptions import PossibleInventoryError
 
 
@@ -298,7 +297,7 @@ class Inventory:
         self.vars_priority = VarsPriority()
 
         if config.env:
-            self.inventory = config.workdir / ( 'inventory' + '.' + config.env )
+            self.inventory = config.workdir / ('inventory' + '.' + config.env)
         else:
             self.inventory = config.workdir / 'inventory'
         if not self.inventory.exists() or not self.inventory.is_dir():
