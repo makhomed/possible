@@ -2,7 +2,7 @@
 __all__ = ['Application']
 
 from possible.engine.exceptions import PossibleUserError
-from possible.engine.runtime import _tasks, _funcs_permissions, _func_defaults
+from possible.engine.runtime import _tasks, _funcs_permissions
 from possible.engine.runtime import _hosts  # noqa: F401
 
 
@@ -18,12 +18,8 @@ class Application:
             raise PossibleUserError(f"Task '{task_name}' not found in posfile '{self.posfile.posfile}'.")
         return _tasks[task_name]
 
-    def get_hosts(self, task_name):
+    def get_hosts(self):
         target = self.config.args.target
-        if target is None:
-            func_name = _tasks[task_name].__name__
-            if func_name in _func_defaults:
-                target = _func_defaults[func_name]
         if target is None:
             result = []
         elif target in self.inventory.hosts:
@@ -61,7 +57,7 @@ class Application:
     def run(self):
         task_name = self.config.args.task
         task = self.get_task(task_name)
-        target_hosts = self.get_hosts(task_name)
+        target_hosts = self.get_hosts()
         self.check_all_permissions()
         self.check_permissions(task_name, target_hosts)
         task(target_hosts)

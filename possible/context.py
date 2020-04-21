@@ -1,7 +1,7 @@
 
 __all__ = ['Context']
 
-from .engine import _hosts
+from possible.engine import _hosts
 
 
 class Context:
