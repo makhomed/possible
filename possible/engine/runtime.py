@@ -1,9 +1,10 @@
 
-__all__ = ['_hosts', '_tasks', '_funcs_permissions']
+__all__ = ['inventory', 'hosts', 'tasks', 'funcs_permissions']
 
-_hosts = []
+inventory = None
 
-_tasks = {}
+hosts = []
 
-_funcs_permissions = {}
+tasks = {}
 
+funcs_permissions = {}

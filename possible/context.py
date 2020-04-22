@@ -1,20 +1,33 @@
 
 __all__ = ['Context']
 
-from possible.engine import _hosts
+from possible.engine import runtime
+from possible.engine import PossibleUserError
 
 
 class Context:
 
-    def __init__(self, host):
-        self.hlen = len(max(_hosts, key=len))
-        self.host = host
+    def __init__(self, hostname):
+        self.max_hostname_len = len(max(runtime.hosts, key=len))
+        self.hostname = hostname
+        if hostname not in runtime.inventory.hosts:
+            raise PossibleUserError(f"Host '{hostname}' not found // Context('{hostname}')")
+        self.host = runtime.inventory.hosts[hostname]
 
     def name(self, message):
-        print(f"{self.host:{self.hlen}} *", message)
+        print(f"{self.hostname:{self.max_hostname_len}} *", message)
 
     def run(self, command):
-        print(f"{self.host:{self.hlen}} * run:", command)
+        print(f"{self.hostname:{self.max_hostname_len}} * run:", command)
+
+    def sudo(self, command):
+        print(f"{self.hostname:{self.max_hostname_len}} * sudo:", command)
+
+    def put(self, local_file, remote_file):
+        pass
+
+    def get(self, remote_file, local_file):
+        pass
 
     def var(self, var_name):  # c.var.name or c.var['name']
         return 'var value'

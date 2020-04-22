@@ -1,16 +1,16 @@
 
 __all__ = ['task', 'allow']
 
-from possible.engine import _tasks, _funcs_permissions
+from possible.engine import runtime
 from possible.engine import PossibleUserError
 
 
 def task(arg):
 
     def decorator(func):
-        if task_name in _tasks:
+        if task_name in runtime.tasks:
             raise PossibleUserError(f"Task '{task_name}' already defined.")
-        _tasks[task_name] = func
+        runtime.tasks[task_name] = func
         return func
 
     if callable(arg):
@@ -25,9 +25,9 @@ def allow(*args):
 
     def decorator(func):
         func_name = func.__name__
-        if func_name not in _funcs_permissions:
-            _funcs_permissions[func_name] = set()
-        _funcs_permissions[func_name].update(args)
+        if func_name not in runtime.funcs_permissions:
+            runtime.funcs_permissions[func_name] = set()
+        runtime.funcs_permissions[func_name].update(args)
         return func
 
     if len(args) == 1 and callable(args[0]):

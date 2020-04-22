@@ -1,9 +1,8 @@
 
 __all__ = ['Application']
 
+from possible.engine import runtime
 from possible.engine.exceptions import PossibleUserError
-from possible.engine.runtime import _tasks, _funcs_permissions
-from possible.engine.runtime import _hosts  # noqa: F401
 
 
 class Application:
@@ -12,11 +11,12 @@ class Application:
         self.config = config
         self.posfile = posfile
         self.inventory = inventory
+        runtime.inventory = inventory
 
     def get_task(self, task_name):
-        if task_name not in _tasks:
+        if task_name not in runtime.tasks:
             raise PossibleUserError(f"Task '{task_name}' not found in posfile '{self.posfile.posfile}'.")
-        return _tasks[task_name]
+        return runtime.tasks[task_name]
 
     def get_hosts(self):
         target = self.config.args.target
@@ -29,23 +29,22 @@ class Application:
         else:
             raise PossibleUserError(f"Target '{target}' not found in inventory '{self.inventory.inventory}'.")
         result.sort()
-        global _hosts
-        _hosts.extend(result[:])
+        runtime.hosts = result
         return result
 
     def check_all_permissions(self):
-        for task_name in _tasks:
-            func_name = _tasks[task_name].__name__
-            if func_name not in _funcs_permissions:
-                _funcs_permissions[func_name] = set()
-            for permission in _funcs_permissions[func_name]:
+        for task_name in runtime.tasks:
+            func_name = runtime.tasks[task_name].__name__
+            if func_name not in runtime.funcs_permissions:
+                runtime.funcs_permissions[func_name] = set()
+            for permission in runtime.funcs_permissions[func_name]:
                 if permission not in self.inventory.hosts and permission not in self.inventory.groups:
                     raise PossibleUserError(f"Unknown permission '{permission}' in @allow list of task '{task_name}'.")
 
     def check_permissions(self, task_name, target_hosts):
         allowed_hosts = set()
-        func_name = _tasks[task_name].__name__
-        for permission in _funcs_permissions[func_name]:
+        func_name = runtime.tasks[task_name].__name__
+        for permission in runtime.funcs_permissions[func_name]:
             if permission in self.inventory.hosts:
                 allowed_hosts.add(permission)
             else:

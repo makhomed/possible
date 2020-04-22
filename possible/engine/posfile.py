@@ -5,7 +5,7 @@ import importlib
 import sys
 
 from possible.engine.exceptions import PossiblePosfileError
-from possible.engine.runtime import _tasks
+from possible.engine import runtime
 
 
 class Posfile:
@@ -20,15 +20,15 @@ class Posfile:
 
     def list_of_tasks(self):
         description = dict()
-        for name in _tasks:
-            task = _tasks[name]
+        for name in runtime.tasks:
+            task = runtime.tasks[name]
             if task.__doc__ is not None:
                 description[name] = task.__doc__.strip().split('\n')[0].strip()
             else:
                 description[name] = ''
-        nlen = len(max(_tasks.keys(), key=len))
+        nlen = len(max(runtime.tasks.keys(), key=len))
         lines = list()
-        for name in _tasks:
+        for name in runtime.tasks:
             lines.append(f"{name:{nlen}} # {description[name]}")
         lines.sort()
         return '\n'.join(lines)
