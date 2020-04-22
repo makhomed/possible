@@ -11,7 +11,7 @@ class Context:
         self.max_hostname_len = len(max(runtime.hosts, key=len))
         self.hostname = hostname
         if hostname not in runtime.inventory.hosts:
-            raise PossibleUserError(f"Host '{hostname}' not found // Context('{hostname}')")
+            raise PossibleUserError(f"Host '{hostname}' not found // in posfile call to Context('{hostname}')")
         self.host = runtime.inventory.hosts[hostname]
 
     def name(self, message):

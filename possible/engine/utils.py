@@ -1,5 +1,5 @@
 
-__all__ = ['_debug', 'eprint']
+__all__ = ['debug', 'eprint']
 
 import sys
 import traceback
@@ -8,7 +8,7 @@ import traceback
 def eprint(*args, **kwargs):
     if args and isinstance(args[0], Exception):
         e = args[0]
-        if _debug:
+        if debug:
             print(''.join(traceback.format_exception(type(e), e, e.__traceback__)), file=sys.stderr, flush=True)
         else:
             print(type(e).__name__, end=': ', file=sys.stderr, flush=True)
@@ -30,6 +30,10 @@ class Debug():
     def disable(self):
         self.__debug = False
 
+    def print(self, *args):
+        if self.__debug:
+            eprint(*args)
+
     def __str__(self):
         if self.__debug:
             return "debug enabled"
@@ -37,4 +41,4 @@ class Debug():
             return "debug disabled"
 
 
-_debug = Debug()
+debug = Debug()
