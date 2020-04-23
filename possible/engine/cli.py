@@ -6,7 +6,7 @@ import sys
 
 from possible.engine.app import Application
 from possible.engine.config import Config
-from possible.engine.exceptions import PossibleError, PossiblePosfileError, PossibleInventoryError, PossibleUserError
+from possible.engine.exceptions import PossibleError, PossiblePosfileError, PossibleInventoryError, PossibleUserError, PossibleRuntimeError
 from possible.engine.inventory import Inventory
 from possible.engine.posfile import Posfile
 from possible.engine.utils import debug, eprint
@@ -52,8 +52,9 @@ def main():
         config, posfile, inventory = parse_all()
         Application(config, posfile, inventory).run()
         sys.exit(0)
-    except KeyboardInterrupt:
-        eprint("User interrupted execution")
+    except PossibleRuntimeError as e:
+        debug.enable()
+        eprint(e)
         sys.exit(5)
     except PossibleUserError as e:
         eprint(e)
@@ -68,7 +69,10 @@ def main():
         debug.enable()
         eprint(e)
         sys.exit(1)
+    except KeyboardInterrupt:
+        eprint("User interrupted execution")
+        sys.exit(7)
     except Exception as e:
         debug.enable()
         eprint(e)
-        sys.exit(100)
+        sys.exit(6)

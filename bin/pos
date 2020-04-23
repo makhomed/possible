@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import possible.engine
+import possible.engine.cli
 
-possible.engine.main()
+possible.engine.cli.main()
 

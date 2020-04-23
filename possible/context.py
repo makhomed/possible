@@ -2,7 +2,23 @@
 __all__ = ['Context']
 
 from possible.engine import runtime
-from possible.engine import PossibleUserError
+from possible.engine.exceptions import PossibleRuntimeError
+from possible.engine.transport import SSH
+
+
+class Fact:
+    def __init__(self, ssh):
+        self.ssh = ssh
+
+    def __getitem__(self, name):
+        if name == 'os':
+            return 'linux'
+        if name == 'distro':
+            return 'centos'
+        if name == 'virt':
+            return True
+        if name == 'kvm':
+            return True
 
 
 class Context:
@@ -11,8 +27,11 @@ class Context:
         self.max_hostname_len = len(max(runtime.hosts, key=len))
         self.hostname = hostname
         if hostname not in runtime.inventory.hosts:
-            raise PossibleUserError(f"Host '{hostname}' not found // in posfile call to Context('{hostname}')")
+            raise PossibleRuntimeError(f"Host '{hostname}' not found.")
         self.host = runtime.inventory.hosts[hostname]
+        self.ssh = SSH(self.host)
+        self.var = self.host.vars
+        self.fact = Fact(self.ssh)
 
     def name(self, message):
         print(f"{self.hostname:{self.max_hostname_len}} *", message)
@@ -28,9 +47,3 @@ class Context:
 
     def get(self, remote_file, local_file):
         pass
-
-    def var(self, var_name):  # c.var.name or c.var['name']
-        return 'var value'
-
-    def fact(self, fact_name):
-        return 'fact value'  # c.fact.kvm or c.fact['kvm']
