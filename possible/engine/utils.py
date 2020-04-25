@@ -1,5 +1,5 @@
 
-__all__ = ['debug', 'eprint']
+__all__ = ['debug', 'eprint', 'to_bytes', 'to_str']
 
 import sys
 import traceback
@@ -42,3 +42,26 @@ class Debug():
 
 
 debug = Debug()
+
+
+def to_bytes(obj):
+    if obj is None:
+        return None
+    if isinstance(obj, bytes):
+        return obj
+    elif isinstance(obj, int):
+        return str(obj).encode('utf-8')
+    elif isinstance(obj, str):
+        return obj.encode('utf-8')
+    else:
+        print(type(obj))
+        raise TypeError('obj must be a str or bytes type')
+
+
+def to_str(obj):
+    if isinstance(obj, str):
+        return obj
+    elif isinstance(obj, bytes):
+        return obj.decode('utf-8')
+    else:
+        raise TypeError('obj must be a bytes or str type')

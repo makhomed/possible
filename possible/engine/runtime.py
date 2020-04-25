@@ -1,6 +1,4 @@
 
-__all__ = ['inventory', 'hosts', 'tasks', 'funcs_permissions']
-
 inventory = None
 
 hosts = []

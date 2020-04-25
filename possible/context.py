@@ -1,9 +1,12 @@
 
 __all__ = ['Context']
 
+import shlex
+
 from possible.engine import runtime
 from possible.engine.exceptions import PossibleRuntimeError
 from possible.engine.transport import SSH
+from possible.engine.utils import to_str
 
 
 class Fact:
@@ -21,6 +24,18 @@ class Fact:
             return True
 
 
+class Result:
+    def __init__(self, returncode, stdout_bytes, stderr_bytes):
+        self.returncode = returncode
+        self.stdout_bytes = stdout_bytes
+        self.stderr_bytes = stderr_bytes
+        self.stdout = stdout_bytes.decode(encoding="utf-8", errors="ignore")
+        self.stderr = stderr_bytes.decode(encoding="utf-8", errors="ignore")
+
+    def __bool__(self):
+        return self.returncode == 0
+
+
 class Context:
 
     def __init__(self, hostname):
@@ -36,14 +51,30 @@ class Context:
     def name(self, message):
         print(f"{self.hostname:{self.max_hostname_len}} *", message)
 
-    def run(self, command):
-        print(f"{self.hostname:{self.max_hostname_len}} * run:", command)
+    def run(self, command, *, stdin=None, shell=False, can_fail=False):
+        if shell:
+            command = "/bin/bash -c %s" % shlex.quote(command)
+        returncode, stdout_bytes, stderr_bytes = self.ssh.run(command, stdin=stdin)
+        result = Result(returncode, stdout_bytes, stderr_bytes)
+        if result or can_fail:
+            return result
+        else:
+            raise PossibleRuntimeError(f"Unexpected returncode '{returncode}'\ncommand: {command}\nstdout: {stdout_bytes}\nstderr: {stderr_bytes}")
 
-    def sudo(self, command):
-        print(f"{self.hostname:{self.max_hostname_len}} * sudo:", command)
 
-    def put(self, local_file, remote_file):
-        pass
+    def put(self, local_filename, remote_filename, *, can_fail=False):
+        returncode, stdout_bytes, stderr_bytes = self.ssh.put(local_filename, remote_filename)
+        result = Result(returncode, stdout_bytes, stderr_bytes)
+        if result or can_fail:
+            return result
+        else:
+            raise PossibleRuntimeError(f"Unexpected returncode '{returncode}'\ncommand: put({local_filename}, {remote_filename})\nstdout: {stdout_bytes}\nstderr: {stderr_bytes}")
 
-    def get(self, remote_file, local_file):
-        pass
+
+    def get(self, remote_filename, local_filename, *, can_fail=False):
+        returncode, stdout_bytes, stderr_bytes = self.ssh.get(remote_filename, local_filename)
+        result = Result(returncode, stdout_bytes, stderr_bytes)
+        if result or can_fail:
+            return result
+        else:
+            raise PossibleRuntimeError(f"Unexpected returncode '{returncode}'\ncommand: get({remote_filename}, {local_filename})\nstdout: {stdout_bytes}\nstderr: {stderr_bytes}")

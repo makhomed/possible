@@ -63,28 +63,6 @@ class DefaultHost:
     user = 'root'
     password = None
 
-    sudo_user = 'root'
-    sudo_password = None
-    sudo_executable = 'sudo'
-    sudo_args = '-H -S -n'
-
-    ssh_executable = 'ssh'
-    sftp_executable = 'sftp'
-    scp_executable = 'scp'
-    ssh_common_args = '-o ControlMaster=auto -o ControlPersist=60s'
-    ssh_common_extra_args = None
-    scp_extra_args = None
-    sftp_extra_args = None
-    ssh_extra_args = None
-
-    retries = 3
-    private_key_file = None
-    host_key_checking = True
-    control_path = '~/.cache/possible'
-    sftp_batch_mode = True
-    scp_if_ssh = 'smart'
-    use_tty = True
-
 
 class Host:
     def __init__(self, name, config):
@@ -101,31 +79,6 @@ class Host:
             HostChecks.ensure_valid_user_name(self.user)
             self.password = config.pop('password', DefaultHost.password)
             HostChecks.ensure_valid_password(self.password)
-
-            self.sudo_user = config.pop('sudo_user', DefaultHost.sudo_user)
-            HostChecks.ensure_valid_user_name(self.sudo_user)
-            self.sudo_password = config.pop('sudo_password', DefaultHost.sudo_password)
-            HostChecks.ensure_valid_password(self.sudo_password)
-            self.sudo_executable = config.pop('sudo_executable', DefaultHost.sudo_executable)
-            self.sudo_args = config.pop('sudo_args', DefaultHost.sudo_args)
-
-            self.ssh_executable = config.pop('ssh_executable', DefaultHost.ssh_executable)
-            self.sftp_executable = config.pop('sftp_executable', DefaultHost.sftp_executable)
-            self.scp_executable = config.pop('scp_executable', DefaultHost.scp_executable)
-            self.ssh_common_args = config.pop('ssh_common_args', DefaultHost.ssh_common_args)
-            self.ssh_common_extra_args = config.pop('ssh_common_extra_args', DefaultHost.ssh_common_extra_args)
-            self.scp_extra_args = config.pop('scp_extra_args', DefaultHost.scp_extra_args)
-            self.sftp_extra_args = config.pop('sftp_extra_args', DefaultHost.sftp_extra_args)
-            self.ssh_extra_args = config.pop('ssh_extra_args', DefaultHost.ssh_extra_args)
-
-            self.retries = config.pop('retries', DefaultHost.retries)
-            self.private_key_file = config.pop('private_key_file', DefaultHost.private_key_file)
-            self.host_key_checking = config.pop('host_key_checking', DefaultHost.host_key_checking)
-            self.control_path = config.pop('control_path', DefaultHost.control_path)
-            self.sftp_batch_mode = config.pop('sftp_batch_mode', DefaultHost.sftp_batch_mode)
-            self.scp_if_ssh = config.pop('scp_if_ssh', DefaultHost.scp_if_ssh)
-            self.use_tty = config.pop('use_tty', DefaultHost.use_tty)
-
             if config:
                 raise PossibleInventoryError(f"Bad host {name} configuration: {config}")
         else:

@@ -1,7 +1,4 @@
 
-__all__ = ['PossibleError', 'PossibleInventoryError', 'PossiblePosfileError', 'PossibleUserError', 'PossibleRuntimeError']
-
-
 class PossibleError(Exception):
     pass
 
@@ -19,4 +16,8 @@ class PossibleUserError(PossibleError):
 
 
 class PossibleRuntimeError(PossibleError):
+    pass
+
+
+class PossibleFileNotFound(PossibleRuntimeError):
     pass
