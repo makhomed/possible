@@ -3,5 +3,5 @@ Possible
 
 Possible is configuration management tool inspired by ansible and fabric.
 
-Development Status :: 1 - Planning
+Development Status :: 3 - Alpha
 

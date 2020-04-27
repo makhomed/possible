@@ -9,6 +9,7 @@ class Application:
 
     def __init__(self, config, posfile, inventory):
         self.config = config
+        runtime.config = config
         self.posfile = posfile
         self.inventory = inventory
         runtime.inventory = inventory

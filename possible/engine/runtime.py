@@ -1,4 +1,6 @@
 
+config = None
+
 inventory = None
 
 hosts = []

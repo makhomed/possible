@@ -46,7 +46,7 @@ setup(
     install_requires=['PyYAML>=5.3.1', 'Jinja2>=2.11.2'],
     scripts=['bin/pos'],
     classifiers=[  # https://pypi.org/classifiers/
-        'Development Status :: 1 - Planning',
+        'Development Status :: 3 - Alpha',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
