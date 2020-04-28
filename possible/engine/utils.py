@@ -1,5 +1,5 @@
 
-__all__ = ['debug', 'eprint', 'to_bytes', 'to_str']
+__all__ = ['debug', 'eprint', 'to_bytes', 'to_text']
 
 import sys
 import traceback
@@ -58,7 +58,7 @@ def to_bytes(obj):
         raise TypeError('obj must be a str or bytes type')
 
 
-def to_str(obj):
+def to_text(obj):
     if isinstance(obj, str):
         return obj
     elif isinstance(obj, bytes):

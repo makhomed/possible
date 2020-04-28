@@ -8,7 +8,7 @@ import shlex
 import subprocess
 
 from possible.engine.exceptions import PossibleError, PossibleRuntimeError, PossibleFileNotFound
-from possible.engine.utils import debug, to_bytes, to_str
+from possible.engine.utils import debug, to_bytes, to_text
 
 
 SSH_COMMON_ARGS = (b'-o', b'ControlMaster=auto', b'-o', b'ControlPersist=60s')
@@ -93,7 +93,7 @@ class SSH:
         os.makedirs(cpdir, mode=0o700, exist_ok=True)
         os.chmod(cpdir, mode=0o700)
         if not os.access(cpdir, os.W_OK):
-            raise PossibleError("Cannot write to ControlPath %s" % to_str(cpdir))
+            raise PossibleError("Cannot write to ControlPath %s" % to_text(cpdir))
         b_command += (b"-o", b"ControlPath=" + to_bytes(SSH._get_control_path(self.host, self.port, self.user)))
 
         # Finally, we add any caller-supplied extras.
@@ -157,10 +157,10 @@ class SSH:
         if returncode == 0:
             return (returncode, stdout, stderr)
         elif returncode == 255:
-            raise PossibleError("Failed to connect to the host %s via scp" % (to_str(stderr)))
+            raise PossibleError("Failed to connect to the host %s via scp" % (to_text(stderr)))
         else:
             raise PossibleError("Failed to transfer file %s to %s:\n%s\n%s" %
-                                (to_str(in_path), to_str(out_path), to_str(stdout), to_str(stderr)))
+                                (to_text(in_path), to_text(out_path), to_text(stdout), to_text(stderr)))
 
     #
     # Main public methods
@@ -179,7 +179,7 @@ class SSH:
     def put(self, local_filename, remote_filename):
         ''' transfer a file from local to remote '''
         if not os.path.exists(to_bytes(local_filename)):
-            raise PossibleFileNotFound("file does not exist: {0}".format(to_str(local_filename)))
+            raise PossibleFileNotFound("Local file does not exist: {0}".format(to_text(local_filename)))
         return self._file_transport_command(local_filename, remote_filename, 'put')
 
     def get(self, remote_filename, local_filename):
