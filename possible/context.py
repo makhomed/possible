@@ -7,6 +7,7 @@ import shlex
 import tempfile
 
 from possible.engine import runtime
+from possible.editors import _apply_editors
 from possible.engine.exceptions import PossibleRuntimeError, PossibleFileNotFound
 from possible.engine.utils import to_bytes, to_text
 from possible.engine.transport import SSH
@@ -120,6 +121,13 @@ class Context:
                 return to_text(content)
         finally:
             os.remove(temp_filename)
+
+    def edit(self, remote_filename, *editors):
+        old_text = self.get(remote_filename)
+        changed, new_text = _apply_editors(old_text, *editors)
+        if changed:
+            self.put(new_text, remote_filename)
+        return changed
 
     def chown(self, remote_filename, *, owner='root', group='root'):
         if not os.path.isabs(remote_filename):
