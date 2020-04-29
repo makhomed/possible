@@ -15,7 +15,7 @@ SSH_COMMON_ARGS = (b'-o', b'ControlMaster=auto', b'-o', b'ControlPersist=60s')
 
 CONTROL_PATH_DIR = '~/.cache/possible'
 
-SSH_COMMAND_TIMEOUT = 30
+SSH_COMMAND_TIMEOUT = 300
 
 SSHPASS_AVAILABLE = None
 
