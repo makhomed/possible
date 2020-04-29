@@ -1,5 +1,5 @@
 
-__version__ = '0.0.0'
+__version__ = '0.1.0'
 
 from possible.context import Context                    # noqa: F401
 from possible.decorators import task, allow             # noqa: F401
