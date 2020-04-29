@@ -1,6 +1,7 @@
 
 __all__ = ['Context']
 
+import re
 import os
 import shlex
 import tempfile
@@ -25,14 +26,12 @@ class Result:
 
 class Context:
     def __init__(self, hostname):
-        self.max_hostname_len = len(max(runtime.hosts, key=len))
-        self.hostname = hostname
         if hostname not in runtime.inventory.hosts:
             raise PossibleRuntimeError(f"Host '{hostname}' not found.")
+        self.max_hostname_len = len(max(runtime.hosts, key=len))
         self.host = runtime.inventory.hosts[hostname]
         self.ssh = SSH(self.host)
-        self.var = self.host.vars
-        self.fact = Fact(self)
+        self.hostname = hostname
 
     def name(self, message):
         if not runtime.config.args.quiet:
@@ -78,7 +77,9 @@ class Context:
             raise PossibleRuntimeError(f"Unexpected returncode '{returncode}'\ncommand: copy({local_filename}, {remote_filename})\nstdout: {stdout_bytes}\nstderr: {stderr_bytes}")
         return True
 
-    def put(self, content, remote_filename, mode=0o644):
+    def put(self, content, remote_filename, mode='0644'):
+        if not isinstance(mode, str):
+            raise PossibleRuntimeError(f"Mode must be string, like '0644'.")
         if not os.path.isabs(remote_filename):
             raise PossibleRuntimeError(f"Remote filename must be absolute: {remote_filename}")
         if self.isfile(remote_filename):
@@ -91,7 +92,7 @@ class Context:
             temp_file = os.fdopen(fd, mode='wb')
             temp_file.write(to_bytes(content))
             temp_file.close()
-            os.chmod(temp_filename, mode)
+            os.chmod(temp_filename, int(mode))
             returncode, stdout_bytes, stderr_bytes = self.ssh.put(temp_filename, remote_filename)
             if returncode != 0:
                 raise PossibleRuntimeError(f"Unexpected returncode '{returncode}'\ncommand: put('{content}', {remote_filename})\nstdout: {stdout_bytes}\nstderr: {stderr_bytes}")
@@ -120,17 +121,39 @@ class Context:
         finally:
             os.remove(temp_filename)
 
+    def chown(self, remote_filename, *, owner='root', group='root'):
+        if not os.path.isabs(remote_filename):
+            raise PossibleRuntimeError(f"Remote filename must be absolute: {remote_filename}")
+        stdout = self.run('chown --changes ' + owner.strip() + ':' + group.strip() + ' -- ' + remote_filename).stdout
+        changed = stdout != ""
+        return changed
 
-class Fact:
-    def __init__(self, c):
-        self.c = c
+    def chmod(self, remote_filename, *, mode='0644'):
+        if not os.path.isabs(remote_filename):
+            raise PossibleRuntimeError(f"Remote filename must be absolute: {remote_filename}")
+        if not isinstance(mode, str):
+            raise PossibleRuntimeError(f"Mode must be string, like '0644'.")
+        stdout = self.run('chmod --changes ' + mode + ' -- ' + remote_filename).stdout
+        changed = stdout != ""
+        return changed
 
-    def __getitem__(self, name):
-        if name == 'os':
-            return self.c.run('uname -s').stdout.strip()
-        if name == 'distro':
-            return 'centos'
-        if name == 'virt':
-            return True
-        if name == 'kvm':
-            return True
+    def var(self, key):
+        return self.host.vars[key]
+
+    def fact(self, key):
+        if key == 'virt':
+            virtualization_type = None
+            stdout = self.run('hostnamectl status').stdout
+            virtualization_line_regexp = re.compile(r'^\s*Virtualization:\s(?P<virtualization_type>\w+)\s*$')
+            for line in stdout.split('\n'):
+                match = virtualization_line_regexp.match(line)
+                if match:
+                    virtualization_type = match.group('virtualization_type')
+                    break
+            return virtualization_type
+        elif key == 'kvm':
+            return self.fact('virt') == 'kvm'
+        elif key == 'openvz':
+            return self.fact('virt') == 'openvz'
+        else:
+            raise KeyError(f"Unknown fact key '{key}'.")

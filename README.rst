@@ -1,7 +1,7 @@
 Possible
 ========
 
-Possible is configuration management tool inspired by ansible and fabric.
+Possible is configuration management tool inspired by Ansible and Fabric.
 
-Development Status :: 3 - Alpha
+Development Status :: 4 - Beta
 
