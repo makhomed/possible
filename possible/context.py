@@ -4,6 +4,8 @@ __all__ = ['Context']
 import re
 import os
 import shlex
+import sys
+import time
 import tempfile
 
 from possible.engine import runtime
@@ -18,8 +20,10 @@ class Result:
         self.returncode = returncode
         self.stdout_bytes = stdout_bytes
         self.stderr_bytes = stderr_bytes
-        self.stdout = stdout_bytes.decode(encoding="utf-8", errors="replace")
-        self.stderr = stderr_bytes.decode(encoding="utf-8", errors="replace")
+        self.stdout_raw = stdout_bytes.decode(encoding="utf-8", errors="replace")
+        self.stderr_raw = stderr_bytes.decode(encoding="utf-8", errors="replace")
+        self.stdout = self.stdout_raw.strip()
+        self.stderr = self.stderr_raw.strip()
 
     def __bool__(self):
         return self.returncode == 0
@@ -34,9 +38,9 @@ class Context:
         self.ssh = SSH(self.host)
         self.hostname = hostname
 
-    def name(self, message):
+    def name(self, *args, **kwargs):
         if not runtime.config.args.quiet:
-            print(f"{self.hostname:{self.max_hostname_len}} *", message)
+            print(f"{self.hostname:{self.max_hostname_len}} *", *args, file=sys.stdout, flush=True, **kwargs)
 
     def run(self, command, *, stdin=None, shell=False, can_fail=False):
         if shell:
@@ -49,16 +53,36 @@ class Context:
             raise PossibleRuntimeError(f"Unexpected returncode '{returncode}'\ncommand: {command}\nstdout: {stdout_bytes}\nstderr: {stderr_bytes}")
 
     def exists(self, remote_filename):
-        return self.run(f"""if [ -e {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout.strip() == "True"
+        return self.run(f"""if [ -e {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout == "True"
 
     def isfile(self, remote_filename):
-        return self.run(f"""if [ -f {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout.strip() == "True"
+        return self.run(f"""if [ -f {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout == "True"
 
     def islink(self, remote_filename):
-        return self.run(f"""if [ -L {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout.strip() == "True"
+        return self.run(f"""if [ -L {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout == "True"
 
     def isdir(self, remote_filename):
-        return self.run(f"""if [ -d {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout.strip() == "True"
+        return self.run(f"""if [ -d {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout == "True"
+
+    def is_reboot_required(self):
+        if not self.isfile("/usr/bin/needs-restarting"):
+            self.run("yum install yum-utils -y")
+        result = self.run("/usr/bin/needs-restarting --reboothint", can_fail=True)
+        return result.returncode == 1
+
+    def reboot(self, *, wait_seconds=180, reboot_command="reboot"):
+        assert wait_seconds > 30
+        old_uptime = self.run('uptime -s').stdout
+        self.run(reboot_command, can_fail=True)
+        while wait_seconds > 0:
+            time.sleep(1)
+            result = self.run('uptime -s', can_fail=True)
+            if result:
+                current_uptime = result.stdout
+                if old_uptime != current_uptime:
+                    return
+            wait_seconds = wait_seconds - 1
+        raise PossibleRuntimeError(f"Reboot host {self.hostname} failed.")
 
     def copy(self, local_filename, remote_filename):
         if os.path.isabs(local_filename):
