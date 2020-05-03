@@ -52,20 +52,17 @@ class Context:
         else:
             raise PossibleRuntimeError(f"Unexpected returncode '{returncode}'\ncommand: {command}\nstdout: {stdout_bytes}\nstderr: {stderr_bytes}")
 
-    def exists(self, remote_filename):
-        return self.run(f"""if [ -e {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout == "True"
-
-    def isfile(self, remote_filename):
+    def is_file(self, remote_filename):
         return self.run(f"""if [ -f {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout == "True"
 
-    def islink(self, remote_filename):
+    def is_link(self, remote_filename):
         return self.run(f"""if [ -L {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout == "True"
 
-    def isdir(self, remote_filename):
+    def is_directory(self, remote_filename):
         return self.run(f"""if [ -d {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout == "True"
 
     def is_reboot_required(self):
-        if not self.isfile("/usr/bin/needs-restarting"):
+        if not self.is_file("/usr/bin/needs-restarting"):
             self.run("yum install yum-utils -y")
         result = self.run("/usr/bin/needs-restarting --reboothint", can_fail=True)
         return result.returncode == 1
@@ -90,7 +87,7 @@ class Context:
         local_filename = str(runtime.config.files / local_filename)
         if not os.path.isabs(remote_filename):
             raise PossibleRuntimeError(f"Remote filename must be absolute: {remote_filename}")
-        if self.isfile(remote_filename):
+        if self.is_file(remote_filename):
             local_file = open(local_filename, mode="rb")
             local_content = local_file.read()
             local_file.close()
@@ -102,12 +99,12 @@ class Context:
             raise PossibleRuntimeError(f"Unexpected returncode '{returncode}'\ncommand: copy({local_filename}, {remote_filename})\nstdout: {stdout_bytes}\nstderr: {stderr_bytes}")
         return True
 
-    def put(self, content, remote_filename, mode='0644'):
+    def put(self, content, remote_filename, *, mode='0644'):
         if not isinstance(mode, str):
             raise PossibleRuntimeError(f"Mode must be string, like '0644'.")
         if not os.path.isabs(remote_filename):
             raise PossibleRuntimeError(f"Remote filename must be absolute: {remote_filename}")
-        if self.isfile(remote_filename):
+        if self.is_file(remote_filename):
             local_content = to_bytes(content)
             remote_content = self.get(remote_filename, as_bytes=True)
             if local_content == remote_content:
@@ -126,11 +123,13 @@ class Context:
         finally:
             os.remove(temp_filename)
 
-    def get(self, remote_filename, *, as_bytes=False):
+    def get(self, remote_filename, default_value=None, *, as_bytes=False):
         if not os.path.isabs(remote_filename):
             raise PossibleRuntimeError(f"Remote filename must be absolute: {remote_filename}")
-        if not self.isfile(remote_filename):
+        if not self.is_file(remote_filename) and default_value is None:
             raise PossibleFileNotFound("Remote file does not exist: {remote_filename}")
+        else:
+            return default_value
         fd, temp_filename = tempfile.mkstemp(suffix='.tmp', prefix='possible-', dir='/tmp')
         try:
             returncode, stdout_bytes, stderr_bytes = self.ssh.get(remote_filename, temp_filename)
