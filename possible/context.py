@@ -9,7 +9,7 @@ import time
 import tempfile
 
 from possible.engine import runtime
-from possible.editors import _apply_editors
+from possible.editors import _apply_editors, edit, append_line, replace_line, strip
 from possible.engine.exceptions import PossibleRuntimeError, PossibleFileNotFound
 from possible.engine.utils import to_bytes, to_text
 from possible.engine.transport import SSH
@@ -114,7 +114,7 @@ class Context:
             temp_file = os.fdopen(fd, mode='wb')
             temp_file.write(to_bytes(content))
             temp_file.close()
-            os.chmod(temp_filename, int(mode))
+            os.chmod(temp_filename, int(mode, 8))
             returncode, stdout_bytes, stderr_bytes = self.ssh.put(temp_filename, remote_filename)
             if returncode != 0:
                 raise PossibleRuntimeError(f"Unexpected returncode '{returncode}'\ncommand: put('{content}', {remote_filename})\nstdout: {stdout_bytes}\nstderr: {stderr_bytes}")
@@ -126,10 +126,11 @@ class Context:
     def get(self, remote_filename, default_value=None, *, as_bytes=False):
         if not os.path.isabs(remote_filename):
             raise PossibleRuntimeError(f"Remote filename must be absolute: {remote_filename}")
-        if not self.is_file(remote_filename) and default_value is None:
-            raise PossibleFileNotFound("Remote file does not exist: {remote_filename}")
-        else:
-            return default_value
+        if not self.is_file(remote_filename):
+            if default_value is None:
+                raise PossibleFileNotFound(f"Remote file does not exist: {remote_filename}")
+            else:
+                return default_value
         fd, temp_filename = tempfile.mkstemp(suffix='.tmp', prefix='possible-', dir='/tmp')
         try:
             returncode, stdout_bytes, stderr_bytes = self.ssh.get(remote_filename, temp_filename)
@@ -144,6 +145,23 @@ class Context:
                 return to_text(content)
         finally:
             os.remove(temp_filename)
+
+    def read(self, local_filename, default_value=None, *, as_bytes=False):
+        if os.path.isabs(local_filename):
+            raise PossibleRuntimeError(f"Local filename must be relative: {local_filename}")
+        local_filename = str(runtime.config.files / local_filename)
+        if not os.path.isfile(local_filename):
+            if default_value is None:
+                raise PossibleFileNotFound(f"Local file does not exist: {local_filename}")
+            else:
+                return default_value
+        local_file = open(local_filename, "rb")
+        content = local_file.read()
+        local_file.close()
+        if as_bytes:
+            return content
+        else:
+            return to_text(content)
 
     def edit(self, remote_filename, *editors):
         old_text = self.get(remote_filename)
@@ -160,10 +178,10 @@ class Context:
         return changed
 
     def chmod(self, remote_filename, *, mode='0644'):
-        if not os.path.isabs(remote_filename):
-            raise PossibleRuntimeError(f"Remote filename must be absolute: {remote_filename}")
         if not isinstance(mode, str):
             raise PossibleRuntimeError(f"Mode must be string, like '0644'.")
+        if not os.path.isabs(remote_filename):
+            raise PossibleRuntimeError(f"Remote filename must be absolute: {remote_filename}")
         stdout = self.run('chmod --changes ' + mode + ' -- ' + remote_filename).stdout
         changed = stdout != ""
         return changed
@@ -188,3 +206,191 @@ class Context:
             return self.fact('virt') == 'openvz'
         else:
             raise KeyError(f"Unknown fact key '{key}'.")
+
+    def is_user_exists(self, name):
+        """is user exists?
+
+        Args:
+            name: user name
+
+        Returns:
+            True if user exists, False if user not exists.
+        """
+        passwd = self.run("getent passwd").stdout
+        for line in passwd.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            if line.split(":")[0] == name:
+                return True
+        return False
+
+    def is_group_exists(self, name):
+        """is group exists?
+
+        Args:
+            name: group name
+
+        Returns:
+            True if group exists, False if group not exists.
+        """
+        group = self.run("getent group").stdout
+        for line in group.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            if line.split(":")[0] == name:
+                return True
+        return False
+
+    def user_home_directory(self, name):
+        """get user home directory
+
+        Args:
+            name: user name
+
+        Returns:
+            Home directory if user exists or None if user not exists.
+        """
+        passwd = self.run("getent passwd").stdout
+        for line in passwd.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            if line.split(":")[0] == name:
+                return line.split(":")[5]
+        raise PossibleRuntimeError(f"User '{name}' not found.")
+
+    def add_to_authorized_keys(self, local_public_keys_filename, username, remote_authorized_keys_filename="~/.ssh/authorized_keys"):
+        if os.path.isabs(local_public_keys_filename):
+            raise PossibleRuntimeError(f"Local public keys filename must be relative: {local_public_keys_filename}")
+        if remote_authorized_keys_filename.startswith('~'):
+            home_directory = self.user_home_directory(username).rstrip('/')
+            remote_authorized_keys_filename = remote_authorized_keys_filename.lstrip('~')
+            remote_authorized_keys_filename = home_directory + remote_authorized_keys_filename
+        if not os.path.isabs(remote_authorized_keys_filename):
+            raise PossibleRuntimeError(f"Remote filename must be absolute: {remote_authorized_keys_filename}")
+        dirname = os.path.dirname(remote_authorized_keys_filename)
+        if not self.is_directory(dirname):
+            self.run(f"mkdir {dirname}")
+            if os.path.basename(dirname) == '.ssh':
+                self.chown(dirname, owner=username, group=username)
+                self.chmod(dirname, mode="0700")
+            else:  # shared dir for authorized keys
+                self.chown(dirname, owner="root", group="root")
+                self.chmod(dirname, mode="0755")
+        old_content = self.get(remote_authorized_keys_filename, "")
+        new_content = old_content
+        keys = self.read(local_public_keys_filename)
+        for key in keys.split("\n"):
+            key = key.strip()
+            if not key:
+                continue
+            new_content = edit(new_content, append_line(key, insert_empty_line_before=True))
+        if new_content != old_content:
+            self.put(new_content, remote_authorized_keys_filename, mode="0600")
+            self.chown(remote_authorized_keys_filename, owner=username, group=username)
+            return True
+        else:
+            return False
+
+    def disable_selinux(self):
+        """Disable SELinux.
+
+        Edit ``/etc/selinux/config`` and write ``SELINUX=disabled`` to it.
+        Also call ``setenforce 0`` to switch SELinux into Permissive mode.
+
+        Returns:
+            True if ``/etc/selinux/config`` changed or if SELinux ``Enforcing`` mode switched into ``Permissive`` mode, False otherwise.
+
+        """
+        if self.is_file('/etc/selinux/config'):
+            changed1 = self.edit('/etc/selinux/config', replace_line(r'\s*SELINUX\s*=\s*.*', 'SELINUX=disabled'))
+        else:
+            changed1 = False
+        if self.run('if [ -f /usr/sbin/setenforce ] && [ -f /usr/sbin/getenforce ] ; then echo exists ; fi') == 'exists':
+            changed2 = self.run('STATUS=$(getenforce) ; if [ "$STATUS" == "Enforcing" ] ; then setenforce 0 ; echo perm ; fi').stdout == 'perm'
+        else:
+            changed2 = False
+        return changed1 or changed2
+
+    def remove_file(self, remote_filename):
+        """Remove remote file.
+
+        Args:
+            remote_filename: Remote file name, must be absolute.
+
+        Returns:
+            True if file removed, False if file not exists.
+        """
+        if not os.path.isabs(remote_filename):
+            raise PossibleRuntimeError(f"Remote filename must be absolute: {remote_filename}")
+        changed = self.run(f'if [ -f {remote_filename} ] ; then rm -f -- {remote_filename} ; echo removed ; fi').stdout == 'removed'
+        return changed
+
+    def create_directory(self, remote_dirname):
+        """Create remote directory.
+
+        .. note::
+            Directory created only if no file exists with name ``remote_dirname``. Existing file will not be deleted.
+
+        Args:
+            remote_dirname: Remote directory name, must be absolute.
+
+        Returns:
+            True if directory created, False if directory already exists.
+        """
+        if not os.path.isabs(remote_dirname):
+            raise PossibleRuntimeError(f"Remote dirname must be absolute: {remote_dirname}")
+        changed = self.run(f'if [ ! -d {remote_dirname} ] ; then mkdir -- {remote_dirname} ; echo created ; fi').stdout == 'created'
+        return changed
+
+    def remove_directory(self, remote_dirname):
+        """Remove remote directory.
+
+        .. note::
+            Remote directory must be empty. Recursive deletion of non-empty directories is not supported.
+
+        Args:
+            remote_dirname: Remote directory name, must be absolute.
+
+        Returns:
+            True if directory removed, False if directory already not exists.
+        """
+        if not os.path.isabs(remote_dirname):
+            raise PossibleRuntimeError(f"Remote dirname must be absolute: {remote_dirname}")
+        changed = self.run(f'if [ -d {remote_dirname} ] ; then rmdir -- {remote_dirname} ; echo removed ; fi').stdout == 'removed'
+        return changed
+
+    def systemctl_edit(self, name, override):
+        """systemctl edit ``name``.
+
+        Works like command ``systemctl edit name``. Creates directory ``/etc/systemd/system/${name}.d``
+        and creates file ``override.conf`` inside it with contents from string override.
+
+        Args:
+            name: Name of systemd service to edit.
+            override: Which text place inside ``override.conf`` file.
+                Leading and trailing whitespace chars are stripped from override.
+
+        Returns:
+            True if file ``override.conf`` for service ``name`` changed, False otherwise.
+        """
+        if override is None:
+            override = ''
+        if not isinstance(override, str):
+            PossibleRuntimeError("Override must be string type.")
+        if '/' in name:
+            PossibleRuntimeError(f"Invalid unit name '{name}'")
+        if not name.endswith('.service'):
+            name = name + '.service'
+        override_dir = '/etc/systemd/system/' + name + '.d'
+        override_conf = os.path.join(override_dir, 'override.conf')
+        override = strip(override)
+        if override:
+            changed1 = self.create_directory(override_dir)
+            changed2 = self.put(override, override_conf)
+        else:
+            changed1 = self.remove_file(override_conf)
+            changed2 = self.remove_directory(override_dir)
+        return changed1 or changed2
