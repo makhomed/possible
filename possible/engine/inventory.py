@@ -32,9 +32,9 @@ class HostChecks:
             raise PossibleInventoryError(f"Bad user name '{name}', it must be string")
         elif not name:
             raise PossibleInventoryError(f"Bad user name '{name}', it can't be empty")
-        elif len(name) >= 32:
+        elif len(name) >= 64:
             raise PossibleInventoryError(f"Bad user name '{name}', it is very long")
-        elif not re.fullmatch(r'^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,31}$', name):
+        elif not re.fullmatch(r'^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$', name):
             raise PossibleInventoryError(f"Bad user name '{name}', it contain not allowed symbols")
 
     @staticmethod
@@ -218,6 +218,7 @@ class ObjectVars:
 class Vars:
     def __init__(self):
         self.__objects = dict()
+        self.__objects['all'] = ObjectVars()
 
     def add(self, obj, name, value):
         if obj not in self.__objects:
@@ -262,7 +263,9 @@ class VarsPriority:
             if name == 'all':
                 self._add(name)
             else:
-                raise PossibleInventoryError(f"Bad vars file, first vars file entry must be for group 'all', not for '{name}'")
+                self._add('all')
+                self._add(name)
+                # raise PossibleInventoryError(f"Bad vars file, first vars file entry must be for group 'all', not for '{name}'")
         else:
             self._add(name)
 
@@ -373,7 +376,8 @@ class Inventory:
             except yaml.YAMLError as e:
                 raise PossibleInventoryError(f"Error groups file config: {e}")
         else:
-            raise PossibleInventoryError(f"Groups file '{self.groups_filename}' not exists")
+            pass
+            # raise PossibleInventoryError(f"Groups file '{self.groups_filename}' not exists")
 
     def check_groups_recursion(self):
         def recursive_check(group, seen):
@@ -458,7 +462,8 @@ class Inventory:
             except yaml.YAMLError as e:
                 raise PossibleInventoryError(f"Error vars file config: {e}")
         else:
-            raise PossibleInventoryError(f"Vars file '{self.vars_filename}' not exists")
+            pass
+            # raise PossibleInventoryError(f"Vars file '{self.vars_filename}' not exists")
 
     def merge_vars(self):
         def copy_vars(from_name, to_host):

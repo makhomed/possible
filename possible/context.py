@@ -100,7 +100,7 @@ class Context:
         return True
 
     def put(self, content, remote_filename, *, mode='0644'):
-        if not isinstance(mode, str):
+        if not isinstance(mode, str) or not mode.isnumeric():
             raise PossibleRuntimeError(f"Mode must be string, like '0644'.")
         if not os.path.isabs(remote_filename):
             raise PossibleRuntimeError(f"Remote filename must be absolute: {remote_filename}")
@@ -178,7 +178,7 @@ class Context:
         return changed
 
     def chmod(self, remote_filename, *, mode='0644'):
-        if not isinstance(mode, str):
+        if not isinstance(mode, str) or not mode.isnumeric():
             raise PossibleRuntimeError(f"Mode must be string, like '0644'.")
         if not os.path.isabs(remote_filename):
             raise PossibleRuntimeError(f"Remote filename must be absolute: {remote_filename}")
@@ -186,8 +186,8 @@ class Context:
         changed = stdout != ""
         return changed
 
-    def var(self, key):
-        return self.host.vars[key]
+    def var(self, key, default=None):
+        return self.host.vars.get(key, default)
 
     def fact(self, key):
         if key == 'virt':
