@@ -237,12 +237,11 @@ class PartMan:
     def lspart(self):
         if not self.is_live_cd():
             raise RuntimeError("Not in LiveCD mode")
+        print()
+        print(self.c.run('lsblk').stdout)
+        print()
         if self.is_devices_has_no_partitions():
             print(f"Devices {self.devices} has no partitions.")
-        else:
-            print()
-            print(self.c.run('lsblk').stdout)
-            print()
 
     def mkpart(self):
         if not self.is_live_cd():
@@ -288,12 +287,13 @@ class PartMan:
     def rmpart(self):
         if not self.is_live_cd():
             raise RuntimeError("Not in LiveCD mode")
+        print()
+        print(self.c.run('lsblk').stdout)
+        print()
         if self.is_devices_has_no_partitions():
             print(f"Devices {self.devices} has no partitions.")
             sys.exit(0)
         else:
-            print(self.c.run('lsblk').stdout)
-            print()
             s = input("Delete ALL partitions? [YES/NO]: ")
             if s != 'YES':
                 sys.exit(1)
@@ -303,15 +303,16 @@ class PartMan:
         self.c.run("pvremove -f /dev/md1", can_fail=True)
 
         self.c.run("mdadm --stop /dev/md0", can_fail=True)
-        self.c.run(f"mdadm --zero-superblock {self.parts(2)}")
+        self.c.run(f"mdadm --zero-superblock {self.parts(2)}", can_fail=True)
         self.c.run("mdadm --stop /dev/md1", can_fail=True)
-        self.c.run(f"mdadm --zero-superblock {self.parts(3)}")
+        self.c.run(f"mdadm --zero-superblock {self.parts(3)}", can_fail=True)
 
         for device in self.devices:
             self.c.run(f"parted -s /dev/{device} -- rm 1", can_fail=True)
             self.c.run(f"parted -s /dev/{device} -- rm 2", can_fail=True)
             self.c.run(f"parted -s /dev/{device} -- rm 3", can_fail=True)
             self.c.run(f"parted -s /dev/{device} -- rm 4", can_fail=True)
+
         print()
         print(self.c.run('lsblk').stdout)
         print()

@@ -174,6 +174,7 @@ class SSH:
         cmd = self._build_command(*args)
         debug.print(f"SSH command: {cmd}")
         (returncode, stdout, stderr) = self._run(cmd, stdin)
+        debug.print(f"returncode: {returncode}\nstdout: {stdout}\nstderr: {stderr}")
         return (returncode, stdout, stderr)
 
     def put(self, local_filename, remote_filename):

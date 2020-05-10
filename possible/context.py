@@ -3,7 +3,6 @@ __all__ = ['Context']
 
 import re
 import os
-import shlex
 import sys
 import time
 import tempfile
@@ -42,9 +41,11 @@ class Context:
         if not runtime.config.args.quiet:
             print(f"{self.hostname:{self.max_hostname_len}} *", *args, file=sys.stdout, flush=True, **kwargs)
 
-    def run(self, command, *, stdin=None, shell=False, can_fail=False):
-        if shell:
-            command = "/bin/bash -c %s" % shlex.quote(command)
+    def warn(self, *args, **kwargs):
+        if not runtime.config.args.quiet:
+            print(f"{self.hostname:{self.max_hostname_len}} $ WARNING!!!", *args, file=sys.stdout, flush=True, **kwargs)
+
+    def run(self, command, *, stdin=None, can_fail=False):
         returncode, stdout_bytes, stderr_bytes = self.ssh.run(command, stdin=stdin)
         result = Result(returncode, stdout_bytes, stderr_bytes)
         if result or can_fail:
@@ -53,13 +54,13 @@ class Context:
             raise PossibleRuntimeError(f"Unexpected returncode '{returncode}'\ncommand: {command}\nstdout: {stdout_bytes}\nstderr: {stderr_bytes}")
 
     def is_file(self, remote_filename):
-        return self.run(f"""if [ -f {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout == "True"
+        return self.run(f"""if [ -f {remote_filename} ]; then echo "True"; fi""").stdout == "True"
 
     def is_link(self, remote_filename):
-        return self.run(f"""if [ -L {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout == "True"
+        return self.run(f"""if [ -L {remote_filename} ]; then echo "True"; fi""").stdout == "True"
 
     def is_directory(self, remote_filename):
-        return self.run(f"""if [ -d {shlex.quote(remote_filename)} ]; then echo "True"; fi""").stdout == "True"
+        return self.run(f"""if [ -d {remote_filename} ]; then echo "True"; fi""").stdout == "True"
 
     def is_reboot_required(self):
         if not self.is_file("/usr/bin/needs-restarting"):
