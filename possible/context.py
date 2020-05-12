@@ -1,9 +1,11 @@
 
-__all__ = ['Context']
+__all__ = ['Context', 'local_run']
 
 import re
 import os
+import shlex
 import sys
+import subprocess
 import time
 import tempfile
 
@@ -12,6 +14,30 @@ from possible.editors import _apply_editors, edit, append_line, replace_line, st
 from possible.engine.exceptions import PossibleRuntimeError, PossibleFileNotFound
 from possible.engine.utils import to_bytes, to_text
 from possible.engine.transport import SSH
+
+
+LOCAL_COMMAND_TIMEOUT = 600
+
+
+def local_run(command, *, stdin=None, can_fail=False):
+    old_cwd = os.getcwd()
+    os.chdir(runtime.config.files)
+    try:
+        command = command.replace("$FILES", str(runtime.config.files))
+        command = ["/bin/bash", "-c", command]
+        p = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            stdout_bytes, stderr_bytes = p.communicate(to_bytes(stdin), LOCAL_COMMAND_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            p.kill()
+            stdout_bytes, stderr_bytes = p.communicate()
+        result = Result(p.returncode, stdout_bytes, stderr_bytes)
+        if result or can_fail:
+            return result
+        else:
+            raise PossibleRuntimeError(f"Unexpected returncode '{p.returncode}'\nlocal command: {command}\nstdout: {stdout_bytes}\nstderr: {stderr_bytes}")
+    finally:
+        os.chdir(old_cwd)
 
 
 class Result:
@@ -45,6 +71,7 @@ class Context:
         if not runtime.config.args.quiet:
             print(f"{self.hostname:{self.max_hostname_len}} $ WARNING!!!", *args, file=sys.stdout, flush=True, **kwargs)
 
+
     def run(self, command, *, stdin=None, can_fail=False):
         returncode, stdout_bytes, stderr_bytes = self.ssh.run(command, stdin=stdin)
         result = Result(returncode, stdout_bytes, stderr_bytes)
@@ -55,6 +82,9 @@ class Context:
 
     def is_file(self, remote_filename):
         return self.run(f"""if [ -f {remote_filename} ]; then echo "True"; fi""").stdout == "True"
+
+    def is_executable_file(self, remote_filename):
+        return self.run(f"""if [ -f {remote_filename} ] && [ -x {remote_filename} ]; then echo "True"; fi""").stdout == "True"
 
     def is_link(self, remote_filename):
         return self.run(f"""if [ -L {remote_filename} ]; then echo "True"; fi""").stdout == "True"
