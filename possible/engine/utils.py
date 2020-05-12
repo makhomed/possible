@@ -54,8 +54,7 @@ def to_bytes(obj):
     elif isinstance(obj, str):
         return obj.encode('utf-8')
     else:
-        print(type(obj))
-        raise TypeError('obj must be a str or bytes type')
+        raise TypeError(f"obj must be a str or bytes type, not '{type(obj)}'")
 
 
 def to_text(obj):
@@ -64,4 +63,4 @@ def to_text(obj):
     elif isinstance(obj, bytes):
         return obj.decode('utf-8')
     else:
-        raise TypeError('obj must be a bytes or str type')
+        raise TypeError(f"obj must be a bytes or str type, not '{type(obj)}'")
