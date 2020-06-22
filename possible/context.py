@@ -224,7 +224,7 @@ class Context:
         if key == 'virt':
             virtualization_type = None
             stdout = self.run('hostnamectl status').stdout
-            virtualization_line_regexp = re.compile(r'^\s*Virtualization:\s(?P<virtualization_type>\w+)\s*$')
+            virtualization_line_regexp = re.compile(r'^\s*Virtualization:\s(?P<virtualization_type>\S+)\s*$')
             for line in stdout.split('\n'):
                 match = virtualization_line_regexp.match(line)
                 if match:
@@ -233,6 +233,8 @@ class Context:
             return virtualization_type
         elif key == 'kvm':
             return self.fact('virt') == 'kvm'
+        elif key == 'systemd-nspawn':
+            return self.fact('virt') == 'systemd-nspawn'
         elif key == 'openvz':
             return self.fact('virt') == 'openvz'
         else:
