@@ -1,5 +1,6 @@
 
 - new:
+    uefi: 1G
     boot: 1G
     root: 8G
     opt:  8G
@@ -8,3 +9,4 @@
     devices:
       - nvme0n1
       - nvme1n1
+
