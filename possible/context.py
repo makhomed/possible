@@ -93,6 +93,8 @@ class Context:
         return self.run(f"""if [ -d {remote_filename} ]; then echo "True"; fi""").stdout == "True"
 
     def is_reboot_required(self):
+        if self.fact('systemd-nspawn'):
+            return False
         if not self.is_file("/usr/bin/needs-restarting"):
             self.run("yum install yum-utils -y")
         result = self.run("/usr/bin/needs-restarting --reboothint", can_fail=True)
