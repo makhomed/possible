@@ -94,6 +94,7 @@ class Context:
 
     def is_reboot_required(self):
         if self.fact('systemd-nspawn'):
+            # workaround of bug https://bugzilla.redhat.com/show_bug.cgi?id=1913962
             return False
         if not self.is_file("/usr/bin/needs-restarting"):
             self.run("yum install yum-utils -y")
@@ -102,11 +103,11 @@ class Context:
 
     def reboot(self, *, wait_seconds=180, reboot_command="reboot"):
         assert wait_seconds > 30
-        old_uptime = self.run('uptime -s').stdout
+        old_uptime = self.run('stat --printf="%y" /proc/1/cmdline').stdout
         self.run(reboot_command, can_fail=True)
         while wait_seconds > 0:
             time.sleep(1)
-            result = self.run('uptime -s', can_fail=True)
+            result = self.run('stat --printf="%y" /proc/1/cmdline', can_fail=True)
             if result:
                 current_uptime = result.stdout
                 if old_uptime != current_uptime:
