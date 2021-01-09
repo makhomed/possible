@@ -225,15 +225,7 @@ class Context:
 
     def fact(self, key):
         if key == 'virt':
-            virtualization_type = None
-            stdout = self.run('hostnamectl status').stdout
-            virtualization_line_regexp = re.compile(r'^\s*Virtualization:\s(?P<virtualization_type>\S+)\s*$')
-            for line in stdout.split('\n'):
-                match = virtualization_line_regexp.match(line)
-                if match:
-                    virtualization_type = match.group('virtualization_type')
-                    break
-            return virtualization_type
+            return self.run('systemd-detect-virt', can_fail=True).stdout
         elif key == 'kvm':
             return self.fact('virt') == 'kvm'
         elif key == 'systemd-nspawn':
