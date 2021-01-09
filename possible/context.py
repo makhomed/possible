@@ -225,6 +225,7 @@ class Context:
 
     def fact(self, key):
         if key == 'virt':
+            """ https://www.freedesktop.org/software/systemd/man/systemd-detect-virt.html """
             return self.run('systemd-detect-virt', can_fail=True).stdout
         elif key == 'kvm':
             return self.fact('virt') == 'kvm'
