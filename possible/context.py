@@ -1,9 +1,7 @@
 
 __all__ = ['Context', 'local_run']
 
-import re
 import os
-import shlex
 import sys
 import subprocess
 import time
@@ -70,7 +68,6 @@ class Context:
     def warn(self, *args, **kwargs):
         if not runtime.config.args.quiet:
             print(f"{self.hostname:{self.max_hostname_len}} $ WARNING!!!", *args, file=sys.stdout, flush=True, **kwargs)
-
 
     def run(self, command, *, stdin=None, can_fail=False):
         returncode, stdout_bytes, stderr_bytes = self.ssh.run(command, stdin=stdin)
