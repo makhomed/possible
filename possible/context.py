@@ -220,6 +220,13 @@ class Context:
     def var(self, key, default=None):
         return self.host.vars.get(key, default)
 
+    def _MemTotal_KiB(self):
+            #print(self.run("cat /proc/meminfo").stdout)
+            string = self.run("cat /proc/meminfo").stdout.splitlines()[0].split()[1]
+            result = int(string)
+            assert result > 0
+            return result
+
     def fact(self, key):
         if key == 'virt':
             """ https://www.freedesktop.org/software/systemd/man/systemd-detect-virt.html """
@@ -230,6 +237,12 @@ class Context:
             return self.fact('virt') == 'systemd-nspawn'
         elif key == 'openvz':
             return self.fact('virt') == 'openvz'
+        elif key == 'MemTotal_KiB':
+            return int(self._MemTotal_KiB())
+        elif key == 'MemTotal_MiB':
+            return int(self._MemTotal_KiB() / 1024.0)
+        elif key == 'MemTotal_GiB':
+            return int(self._MemTotal_KiB() / 1024.0 / 1024.0)
         else:
             raise KeyError(f"Unknown fact key '{key}'.")
 
