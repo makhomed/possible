@@ -69,6 +69,11 @@ class Context:
         if not runtime.config.args.quiet:
             print(f"{self.hostname:{self.max_hostname_len}} $ WARNING!!!", *args, file=sys.stdout, flush=True, **kwargs)
 
+    def fatal(self, *args, **kwargs):
+        if not runtime.config.args.quiet:
+            print(f"{self.hostname:{self.max_hostname_len}} & FATAL ERROR!!!", *args, file=sys.stdout, flush=True, **kwargs)
+            raise PossibleRuntimeError(*args)
+
     def run(self, command, *, stdin=None, can_fail=False):
         returncode, stdout_bytes, stderr_bytes = self.ssh.run(command, stdin=stdin)
         result = Result(returncode, stdout_bytes, stderr_bytes)
