@@ -19,4 +19,4 @@ class Config():
 
     @property
     def templates(self): 
-        return self.workdir / 'templates'
+        return self.workdir / 'files.j2'
