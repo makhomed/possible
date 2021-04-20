@@ -1,7 +1,8 @@
 
-__all__ = ['insert_line', 'prepend_line', 'append_line', 'delete_line', 'replace_line', 'substitute_line', 'strip_line', 'edit_ini_section', 'strip', 'edit', '_apply_editors']
+__all__ = ['insert_line', 'prepend_line', 'append_line', 'delete_line', 'replace_line', 'substitute_line', 'strip_line', 'edit_ini_section', 'strip', 'istrip', 'edit', '_apply_editors']
 
 import re
+import sys
 
 from possible.engine.exceptions import PossibleRuntimeError
 
@@ -353,7 +354,7 @@ def strip(text):
     r"""Strip text helper function.
 
     Strip all empty lines from begin and end of text. Also strip all whitespace characters from begin and end of each line.
-    Preserves '\\n' character at last line of text.
+    Preserves '\\n' character at last line of text. Not preservers indent whitespaces characters at the begin on each line.
 
     Args:
         text: Text to strip, must be string or None.
@@ -367,7 +368,7 @@ def strip(text):
     if text is None:
         text = ''
     if not isinstance(text, str):
-        raise PossibleRuntimeError('strip_text: string expected')
+        raise PossibleRuntimeError('strip: string expected')
     if not text:
         return text
     lines = list()
@@ -376,4 +377,47 @@ def strip(text):
         line = line.strip()
         lines.append(line)
     text = '\n'.join(lines)
+    return text
+
+def istrip(text):
+    r"""Strip text helper function.
+
+    Strip all empty lines from begin and end of text. Also strip all whitespace characters from begin and end of each line.
+    Preserves '\\n' character at last line of text. Preservers indent whitespaces characters at the begin on each line.
+
+    Args:
+        text: Text to strip, must be string or None.
+
+    Returns:
+        Text after strip. It is always string even if argument was None.
+
+    Raises:
+        :class:`~exceptions.PossibleRuntimeError`: When error occurred.
+    """
+    if text is None:
+        text = ''
+    if not isinstance(text, str):
+        raise PossibleRuntimeError('istrip: string expected')
+    if not text:
+        return text
+    lines = list()
+    
+    for line in text.split('\n'):
+        if line.strip() == '':
+            continue
+        lines.append(line)
+    text = '\n'.join(lines)
+
+    lines = list()
+    spaces = sys.maxsize
+    for line in text.split('\n'):
+        line_spaces = len(line) - len(line.lstrip(' '))
+        if line_spaces < spaces:
+            spaces = line_spaces
+
+    for line in text.split('\n'):
+        line = line[spaces:]
+        line = line.rstrip()
+        lines.append(line)
+    text = '\n'.join(lines) + '\n'
     return text
