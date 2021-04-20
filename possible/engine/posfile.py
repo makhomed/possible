@@ -3,6 +3,7 @@ __all__ = ['Posfile']
 
 import importlib
 import sys
+import os
 
 from possible.engine.exceptions import PossiblePosfileError
 from possible.engine import runtime
@@ -11,7 +12,13 @@ from possible.engine import runtime
 class Posfile:
     def __init__(self, config):
         posfile = config.workdir / 'posfile.py'
-        if not posfile.exists() or not posfile.is_file():
+        if not posfile.is_file():
+            if config.workdir.stem == 'inventory':
+                parent_dir = config.workdir.parents[0]
+                config.workdir = parent_dir
+                posfile = config.workdir / 'posfile.py'
+                os.chdir(config.workdir)
+        if not posfile.is_file():
             raise PossiblePosfileError(f"Posfile '{posfile}' not exists")
         self.posfile = posfile
         if config.workdir not in sys.path:
