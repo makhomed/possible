@@ -91,6 +91,9 @@ class Context:
     def is_link(self, remote_filename):
         return self.run(f"""if [ -L {remote_filename} ]; then echo "True"; fi""").stdout == "True"
 
+    def is_dir(self, remote_filename):
+        self.is_directory(remote_filename)
+
     def is_directory(self, remote_filename):
         return self.run(f"""if [ -d {remote_filename} ]; then echo "True"; fi""").stdout == "True"
 
@@ -117,7 +120,7 @@ class Context:
             wait_seconds = wait_seconds - 1
         raise PossibleRuntimeError(f"Reboot host {self.hostname} failed.")
 
-    def copy(self, local_filename, remote_filename):
+    def copy(self, local_filename, remote_filename, *, mode='0644'):
         if os.path.isabs(local_filename):
             raise PossibleRuntimeError(f"Local filename must be relative: {local_filename}")
         local_filename = str(runtime.config.files / local_filename)
@@ -129,10 +132,12 @@ class Context:
             local_file.close()
             remote_content = self.get(remote_filename, as_bytes=True)
             if local_content == remote_content:
-                return False
+                changed = self.chmod(remote_filename, mode=mode)
+                return changed
         returncode, stdout_bytes, stderr_bytes = self.ssh.put(local_filename, remote_filename)
         if returncode != 0:
             raise PossibleRuntimeError(f"Unexpected returncode '{returncode}'\ncommand: copy({local_filename}, {remote_filename})\nstdout: {stdout_bytes}\nstderr: {stderr_bytes}")
+        self.chmod(remote_filename, mode=mode)
         return True
 
     def put(self, content, remote_filename, *, mode='0644'):
@@ -372,6 +377,9 @@ class Context:
         changed = self.run(f'if [ -f {remote_filename} ] ; then rm -f -- {remote_filename} ; echo removed ; fi').stdout == 'removed'
         return changed
 
+    def mkdir(self, remote_dirname):
+            self.create_directory(remote_dirname)
+
     def create_directory(self, remote_dirname):
         """Create remote directory.
 
@@ -388,6 +396,9 @@ class Context:
             raise PossibleRuntimeError(f"Remote dirname must be absolute: {remote_dirname}")
         changed = self.run(f'if [ ! -d {remote_dirname} ] ; then mkdir -- {remote_dirname} ; echo created ; fi').stdout == 'created'
         return changed
+
+    def rmdir(self, remote_dirname):
+            self.remove_directory(remote_dirname)
 
     def remove_directory(self, remote_dirname):
         """Remove remote directory.

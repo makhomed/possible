@@ -13,7 +13,7 @@ class Posfile:
     def __init__(self, config):
         posfile = config.workdir / 'posfile.py'
         if not posfile.is_file():
-            if config.workdir.stem == 'inventory':
+            if config.workdir.stem == 'inventory' or config.workdir.stem == 'files':
                 parent_dir = config.workdir.parents[0]
                 config.workdir = parent_dir
                 posfile = config.workdir / 'posfile.py'
