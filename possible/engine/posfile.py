@@ -27,15 +27,37 @@ class Posfile:
 
     def list_of_tasks(self):
         description = dict()
-        for name in runtime.tasks:
-            task = runtime.tasks[name]
+        for task_name in runtime.tasks:
+            task = runtime.tasks[task_name]
             if task.__doc__ is not None:
-                description[name] = task.__doc__.strip().split('\n')[0].strip()
+                description[task_name] = task.__doc__.strip().split('\n')[0].strip()
             else:
-                description[name] = name.replace('-', ' ')
+                description[task_name] = task_name.replace('-', ' ')
         nlen = len(max(runtime.tasks.keys(), key=len))
-        lines = list()
-        for name in runtime.tasks:
-            lines.append(f"{name:{nlen}} # {description[name]}")
-        lines.sort()
-        return '\n'.join(lines)
+        all_lines = dict()
+        for task_name in runtime.tasks:
+            all_lines[task_name]=f"{task_name:{nlen}} = {description[task_name]}"
+
+        lines_by_group = dict()
+        for task_name in runtime.tasks:
+            group = runtime.groups.get(task_name, '')
+            if group not in lines_by_group:
+                lines_by_group[group] = list()
+            lines_by_group[group].append(all_lines[task_name])
+        out = list()
+        out.append('')
+        for group in sorted(lines_by_group.keys()):
+            if group:
+                out.append('[' + group + ']')
+            lines_by_group[group].sort()
+            for line in lines_by_group[group]:
+                 out.append(line)
+            out.append('')
+
+        return '\n'.join(out)
+        
+
+
+
+#        lines.sort()
+#        return '\n'.join(lines)

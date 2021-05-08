@@ -7,4 +7,7 @@ hosts = []
 
 tasks = {}
 
-funcs_permissions = {}
+groups = {}
+
+permissions = {}
+

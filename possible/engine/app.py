@@ -35,17 +35,15 @@ class Application:
 
     def check_all_permissions(self):
         for task_name in runtime.tasks:
-            func_name = runtime.tasks[task_name].__name__
-            if func_name not in runtime.funcs_permissions:
-                runtime.funcs_permissions[func_name] = set()
-            for permission in runtime.funcs_permissions[func_name]:
+            if task_name not in runtime.permissions:
+                runtime.permissions[task_name] = set()
+            for permission in runtime.permissions[task_name]:
                 if permission not in self.inventory.hosts and permission not in self.inventory.groups:
                     raise PossibleUserError(f"Unknown permission '{permission}' in @allow list of task '{task_name}'.")
 
     def check_permissions(self, task_name, target_hosts):
         allowed_hosts = set()
-        func_name = runtime.tasks[task_name].__name__
-        for permission in runtime.funcs_permissions[func_name]:
+        for permission in runtime.permissions[task_name]:
             if permission in self.inventory.hosts:
                 allowed_hosts.add(permission)
             else:
