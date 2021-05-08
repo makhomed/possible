@@ -14,7 +14,7 @@ def task(arg):
         return func
 
     if callable(arg):
-        task_name = arg.__name__
+        task_name = arg.__name__.replace('_', '-')
         return decorator(arg)
     else:
         task_name = arg

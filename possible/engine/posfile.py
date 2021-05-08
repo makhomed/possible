@@ -32,7 +32,7 @@ class Posfile:
             if task.__doc__ is not None:
                 description[name] = task.__doc__.strip().split('\n')[0].strip()
             else:
-                description[name] = ''
+                description[name] = name.replace('-', ' ')
         nlen = len(max(runtime.tasks.keys(), key=len))
         lines = list()
         for name in runtime.tasks:
