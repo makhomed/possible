@@ -17,8 +17,7 @@ def parse_args():
     parser = argparse.ArgumentParser(prog='pos', description="possible is configuration management tool")
     parser.add_argument('-v', '--version', action='version', version=__version__, help="show program's version and exit")
     parser.add_argument('-i', '--dump-inventory', dest='dump_inventory', action="store_true", help="show inventory dump and exit")
-    parser.add_argument('-a', '--dump-vars', dest='dump_vars', action="store_true", help="show host vars dump and exit")
-    parser.add_argument('-l', '--list-tasks', dest='list_tasks', action="store_true", help="show all tasks list and exit")
+    parser.add_argument('-r', '--dump-vars', dest='dump_vars', action="store_true", help="show host vars dump and exit")
     parser.add_argument('-d', '--debug', dest='debug', action="store_true", help="run program in debug mode")
     parser.add_argument('-q', '--quiet', dest='quiet', action="store_true", help="run program in quiet mode")
     parser.add_argument('-e', '--env', dest='env', action="store", help="run in stage/prod/etc env")
@@ -40,7 +39,7 @@ def parse_all():
     if args.dump_vars:
         print(inventory.dump_vars(), file=sys.stdout, flush=True)
         sys.exit(0)
-    if args.list_tasks or args.task is None and args.target is None:
+    if args.task is None and args.target is None:
         print(posfile.list_of_tasks(), file=sys.stdout, flush=True)
         sys.exit(0)
     return config, posfile, inventory
