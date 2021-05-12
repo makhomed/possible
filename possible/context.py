@@ -247,6 +247,12 @@ class Context:
             return self.fact('virt') == 'systemd-nspawn'
         elif key == 'openvz':
             return self.fact('virt') == 'openvz'
+        elif key == 'vm':
+            result = self.run('systemd-detect-virt --vm', can_fail=True)
+            if result.returncode == 0:
+                return result.stdout
+            else:
+                return False
         elif key == 'MemTotal_KiB':
             return int(self._MemTotal_KiB())
         elif key == 'MemTotal_MiB':

@@ -1,5 +1,6 @@
 
-__all__ = ['insert_line', 'prepend_line', 'append_line', 'delete_line', 'replace_line', 'substitute_line', 'strip_line', 'edit_ini_section', 'strip', 'istrip', 'edit', '_apply_editors']
+__all__ = ['insert_line', 'prepend_line', 'append_line', 'delete_line', 'replace_line', 'substitute_line', 'strip_line',
+           'edit_ini_section', 'strip', 'istrip', 'edit', '_apply_editors', 'edit_line', 'append_word', 'remove_word']
 
 import re
 import sys
@@ -271,6 +272,102 @@ def _apply_editors(old_text, *editors):
     return changed, new_text
 
 
+def removeprefix(self, prefix):
+    # https://www.python.org/dev/peps/pep-0616/
+    if self.startswith(prefix):
+        return self[len(prefix):]
+    else:
+        return self[:]
+
+def removesuffix(self, suffix):
+    # https://www.python.org/dev/peps/pep-0616/
+    # suffix='' should not call self[:-0].
+    if suffix and self.endswith(suffix):
+        return self[:-len(suffix)]
+    else:
+        return self[:]
+
+def edit_line(prefix, suffix, *editors):
+    """Edit one text line text editor"""
+    def line_editor(text):
+        pattern = _full_line(prefix + '.*' + suffix)
+        regex = re.compile(pattern)
+        lines = list()
+        selected_lines = list()
+        for line in text.split('\n'):
+            match = regex.match(line)
+            if match:
+                selected_lines.append(line)
+                assert line.startswith(prefix)
+                assert line.endswith(suffix)
+                line = removeprefix(line, prefix)
+                line = removesuffix(line, suffix)
+                changed, line = _apply_editors(line, *editors)
+                assert '\n' not in line
+                lines.append(prefix + line + suffix)
+            else:
+                lines.append(line)
+        return '\n'.join(lines)
+    return line_editor
+
+
+def append_word(word_to_append):
+    """Append word editor.
+
+    Appends ``word_to_append`` after last char of text.
+    If ``line_to_append`` already presend in text in any line position - do nothing.
+
+    Args:
+        word_to_append: Line to append after last line of text.
+
+    Returns:
+        closure function, which acts as text editor, parameterized by :func:`~append_line` arguments.
+    """
+
+    def append_word_editor(text):
+        text_words = text.split()
+        if word_to_append in text_words:
+            return text
+        else:
+            return text + ' ' + word_to_append
+    return append_word_editor
+
+
+def remove_word(word_to_remove):
+    """Remove word editor."""
+    def remove_word_editor(text):
+        text_words = text.split()
+        if word_to_remove not in text_words:
+            return text
+        else:
+            words = list()
+            in_word = text[0] != ' ' and text[0] != '\t'
+            buf = ''
+            for char in text:
+                if char == ' ' or char == '\t':
+                    if in_word:
+                        words.append(buf)
+                        in_word = False
+                        buf=char
+                    else:
+                        buf+=char
+                else:
+                    if in_word:
+                        buf+=char
+                    else:
+                        words.append(buf)
+                        in_word = True
+                        buf=char
+            out = list()
+            for word in words:
+                if word == word_to_remove:
+                    continue
+                else:
+                    out.append(word)
+            return ''.join(out)
+    return remove_word_editor
+
+
 def edit_ini_section(section_name_to_edit, *editors):
     """Edit ini section text editor.
 
@@ -401,7 +498,7 @@ def istrip(text):
     if not text:
         return text
     lines = list()
-    
+
     for line in text.split('\n'):
         if line.strip() == '':
             continue
