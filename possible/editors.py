@@ -6,6 +6,7 @@ import re
 import sys
 
 from possible.engine.exceptions import PossibleRuntimeError
+from possible.engine.utils import debug
 
 
 def _full_line(pattern):
@@ -266,6 +267,13 @@ def _apply_editors(old_text, *editors):
         text = editor(text)
     text_after_second_pass = text
     if text_after_first_pass != text_after_second_pass:
+        debug.print("="*80)
+        debug.print(f"0 run: >>>{old_text}<<<")
+        debug.print("="*80)
+        debug.print(f"1 run: >>>{text_after_first_pass}<<<")
+        debug.print("="*80)
+        debug.print(f"2 run: >>>{text_after_second_pass}<<<")
+        debug.print("="*80)
         raise PossibleRuntimeError("editors is not idempotent.")
     new_text = text_after_second_pass
     changed = new_text != old_text
@@ -358,6 +366,8 @@ def remove_word(word_to_remove):
                         words.append(buf)
                         in_word = True
                         buf=char
+            if buf:
+                words.append(buf)
             out = list()
             for word in words:
                 if word == word_to_remove:
