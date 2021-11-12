@@ -1,0 +1,13 @@
+
+- new:
+    boot: 1G
+    root: 8G
+    opt:  8G
+    tmp:  8G
+    var:  8G
+    devices:
+      - sda
+      - sdb
+      - sdc
+      - sdd
+
