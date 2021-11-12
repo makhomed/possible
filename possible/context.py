@@ -227,6 +227,23 @@ class Context:
         changed = stdout != ""
         return changed
 
+    def sysctl(self, line):
+        line = line.strip()
+        if '\n' in line:
+            raise PossibleRuntimeError(f"sysctl setting must be one line string")
+        if '=' not in line:
+            raise PossibleRuntimeError(f"sysctl setting must be in form 'name = value'")
+        name, value = line.split('=')
+        name = name.strip()
+        value = value.strip()
+        line = f"\n{name} = {value}\n"
+        filename = f"/etc/sysctl.d/{name}.conf"
+        changed = self.put(line, filename)
+        if changed:
+            self.name(f"tune {name} = {value}")
+            self.run(f"sysctl -p {filename}")
+        return changed
+
     def var(self, key, default=None):
         return self.host.vars.get(key, default)
 
