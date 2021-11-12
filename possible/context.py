@@ -236,7 +236,7 @@ class Context:
         name, value = line.split('=')
         name = name.strip()
         value = value.strip()
-        line = f"\n{name} = {value}\n"
+        line = f"\n{name} = {value}\n\n"
         filename = f"/etc/sysctl.d/{name}.conf"
         changed = self.put(line, filename)
         if changed:
