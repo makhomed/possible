@@ -92,7 +92,7 @@ class Context:
         return self.run(f"""if [ -L {remote_filename} ]; then echo "True"; fi""").stdout == "True"
 
     def is_dir(self, remote_filename):
-        self.is_directory(remote_filename)
+        return self.is_directory(remote_filename)
 
     def is_directory(self, remote_filename):
         return self.run(f"""if [ -d {remote_filename} ]; then echo "True"; fi""").stdout == "True"
