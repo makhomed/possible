@@ -52,6 +52,11 @@ class Result:
         return self.returncode == 0
 
 
+class style:
+    RED = '\033[0;91m'
+    RESET = '\033[0m'
+
+
 class Context:
     def __init__(self, hostname):
         if hostname not in runtime.inventory.hosts:
@@ -66,13 +71,18 @@ class Context:
             print(f"{self.hostname:{self.max_hostname_len}} *", *args, file=sys.stdout, flush=True, **kwargs)
 
     def warn(self, *args, **kwargs):
-        if not runtime.config.args.quiet:
-            print(f"{self.hostname:{self.max_hostname_len}} $ WARNING!!!", *args, file=sys.stdout, flush=True, **kwargs)
+        print(f"{style.RED}", end="", file=sys.stderr, flush=True)
+        print(f"{style.RED}{self.hostname:{self.max_hostname_len}} *", *args, file=sys.stderr, flush=True, **kwargs)
+        print(f"{style.RESET}", end="", file=sys.stderr, flush=True)
 
     def fatal(self, *args, **kwargs):
+        print(f"{style.RED}", end="", file=sys.stderr, flush=True)
+        print(f"{self.hostname:{self.max_hostname_len}} *", *args, file=sys.stderr, flush=True, **kwargs)
+        print(f"{style.RESET}", end="", file=sys.stderr, flush=True)
         if not runtime.config.args.quiet:
-            print(f"{self.hostname:{self.max_hostname_len}} & FATAL ERROR!!!", *args, file=sys.stdout, flush=True, **kwargs)
             raise PossibleRuntimeError(*args)
+        else:
+            sys.exit(1)
 
     def run(self, command, *, stdin=None, can_fail=False):
         returncode, stdout_bytes, stderr_bytes = self.ssh.run(command, stdin=stdin)
@@ -81,6 +91,15 @@ class Context:
             return result
         else:
             raise PossibleRuntimeError(f"Unexpected returncode '{returncode}'\ncommand: {command}\nstdout: {stdout_bytes}\nstderr: {stderr_bytes}")
+
+    def all_ip_addresses(self):
+        return self.run("hostname --all-ip-addresses").stdout.split()
+
+    def is_hardware_node(self):
+        return self.run("systemd-detect-virt", can_fail=True).stdout == "none"
+
+    def is_virtual_machine(self):
+        return self.run("systemd-detect-virt", can_fail=True).stdout == "kvm"
 
     def is_file(self, remote_filename):
         return self.run(f"""if [ -f {remote_filename} ]; then echo "True"; fi""").stdout == "True"
@@ -244,8 +263,11 @@ class Context:
             self.run(f"sysctl -p {filename}")
         return changed
 
-    def var(self, key, default=None):
-        return self.host.vars.get(key, default)
+    def var_defined(self, key):
+        return key in self.host.vars
+
+    def var(self, key):
+        return self.host.vars[key]
 
     def _MemTotal_KiB(self):
             #print(self.run("cat /proc/meminfo").stdout)
@@ -421,7 +443,7 @@ class Context:
         return changed
 
     def rmdir(self, remote_dirname):
-            self.remove_directory(remote_dirname)
+            return self.remove_directory(remote_dirname)
 
     def remove_directory(self, remote_dirname):
         """Remove remote directory.
