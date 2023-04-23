@@ -423,7 +423,7 @@ class Context:
         return changed
 
     def mkdir(self, remote_dirname):
-            self.create_directory(remote_dirname)
+        return self.create_directory(remote_dirname)
 
     def create_directory(self, remote_dirname):
         """Create remote directory.
@@ -443,7 +443,7 @@ class Context:
         return changed
 
     def rmdir(self, remote_dirname):
-            return self.remove_directory(remote_dirname)
+        return self.remove_directory(remote_dirname)
 
     def remove_directory(self, remote_dirname):
         """Remove remote directory.
