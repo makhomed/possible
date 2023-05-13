@@ -168,7 +168,7 @@ class Context:
             local_content = to_bytes(content)
             remote_content = self.get(remote_filename, as_bytes=True)
             if local_content == remote_content:
-                return False
+                return False # TODO FIX BUG: not change mode if content is identical
         fd, temp_filename = tempfile.mkstemp(suffix='.tmp', prefix='possible-', dir='/tmp')
         try:
             temp_file = os.fdopen(fd, mode='wb')

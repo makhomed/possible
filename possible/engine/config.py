@@ -14,9 +14,5 @@ class Config():
             self.env = None
 
     @property
-    def files(self): 
+    def files(self):
         return self.workdir / 'files'
-
-    @property
-    def templates(self): 
-        return self.workdir / 'files.j2'
